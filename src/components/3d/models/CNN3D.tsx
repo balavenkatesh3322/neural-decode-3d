@@ -11,6 +11,7 @@ interface CNN3DProps {
   isIsolated?: boolean;
   isWireframe?: boolean;
   isCrossSection?: boolean;
+  isExplodedView?: boolean;
   isModalOpen?: boolean;
   onSelectNode: (component: NodeComponent) => void;
 }
@@ -22,6 +23,7 @@ export const CNN3D: React.FC<CNN3DProps> = ({
   isIsolated = false,
   isWireframe = false,
   isCrossSection = false,
+  isExplodedView = false,
   isModalOpen = false,
   onSelectNode,
 }) => {

@@ -6,6 +6,7 @@ import { Architecture, NodeComponent } from '../../types/architecture';
 import { HotspotPin } from './HotspotPin';
 import { SignalPulseStream } from './SignalPulseStream';
 import { Transformer3D } from './models/Transformer3D';
+import { FullTransformer3D } from './models/FullTransformer3D';
 import { MoE3D } from './models/MoE3D';
 import { CNN3D } from './models/CNN3D';
 import { Mamba3D } from './models/Mamba3D';
@@ -14,7 +15,7 @@ import { WeightBias3DBlock } from './blocks/WeightBias3DBlock';
 import { Activation3DBlock } from './blocks/Activation3DBlock';
 import { LossGradient3DBlock } from './blocks/LossGradient3DBlock';
 import { Embedding3DBlock } from './blocks/Embedding3DBlock';
-import { Loader2, Boxes, Sparkles } from 'lucide-react';
+import { Loader2, Boxes, Sparkles, Activity, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface CanvasContainerProps {
@@ -31,6 +32,7 @@ interface CanvasContainerProps {
   isWireframe: boolean;
   isCrossSection: boolean;
   isAutoRotate: boolean;
+  isExplodedView?: boolean;
   isPlayingAnimation: boolean;
   trainingPhase?: 'before' | 'while' | 'after';
   isModalOpen?: boolean;
@@ -101,6 +103,7 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({
   isWireframe,
   isCrossSection,
   isAutoRotate,
+  isExplodedView = false,
   isPlayingAnimation,
   trainingPhase,
   isModalOpen = false,
@@ -119,6 +122,20 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({
             isIsolated={isIsolated}
             isWireframe={isWireframe}
             isCrossSection={isCrossSection}
+            isExplodedView={isExplodedView}
+            onSelectNode={onSelectNode}
+          />
+        );
+      case 'transformer-full':
+        return (
+          <FullTransformer3D
+            components={architecture.components}
+            selectedNodeId={selectedNode?.id}
+            hoveredNodeId={hoveredNodeId}
+            isIsolated={isIsolated}
+            isWireframe={isWireframe}
+            isCrossSection={isCrossSection}
+            isExplodedView={isExplodedView}
             onSelectNode={onSelectNode}
           />
         );
@@ -179,6 +196,7 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({
             isIsolated={isIsolated}
             isWireframe={isWireframe}
             isCrossSection={isCrossSection}
+            isExplodedView={isExplodedView}
             onSelectNode={onSelectNode}
           />
         );
@@ -251,6 +269,29 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({
           </>
         )}
       </Canvas>
+
+      {/* Floating Dismantled Layer Inner Working Card Overlay */}
+      {selectedNode && isExplodedView && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="absolute bottom-6 left-6 p-4 rounded-2xl bg-[rgba(255,251,244,0.9)] backdrop-blur-md border border-[rgba(117,91,70,0.18)] shadow-xl max-w-sm z-30 select-none font-sans"
+        >
+          <div className="flex items-center gap-2 mb-1 text-[#eb7c6b] font-bold text-xs font-mono uppercase">
+            <Layers className="w-4 h-4" />
+            <span>DISMANTLED LAYER SPECIMEN</span>
+          </div>
+          <h4 className="font-serif font-bold text-base text-[#2f2a27]">
+            {selectedNode.name}
+          </h4>
+          <p className="text-xs text-[#8d847c] mt-1 font-sans">
+            {selectedNode.description}
+          </p>
+          <div className="mt-2.5 p-2 rounded-xl bg-[#fff2c9] text-[#534a43] text-[10px] font-mono border border-[#f0e2b0]">
+            TENSOR: {selectedNode.outputTensor.expression}
+          </div>
+        </motion.div>
+      )}
 
       {/* Interactive 3D Neural Specimen Transition Loading Overlay */}
       <AnimatePresence>

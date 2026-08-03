@@ -10,6 +10,7 @@ interface Model3DProps {
   isIsolated: boolean;
   isWireframe: boolean;
   isCrossSection: boolean;
+  isExplodedView?: boolean;
   onSelectNode: (component: NodeComponent) => void;
 }
 
@@ -20,6 +21,7 @@ export const Diffusion3D: React.FC<Model3DProps> = ({
   isIsolated = false,
   isWireframe = false,
   isCrossSection = false,
+  isExplodedView = false,
   onSelectNode,
 }) => {
   const groupRef = useRef<THREE.Group>(null);

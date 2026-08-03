@@ -14,6 +14,7 @@ import {
   BookOpen,
   BarChart2,
   Sliders,
+  Share2,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -26,6 +27,7 @@ interface NavbarProps {
   onOpenQuiz: () => void;
   onOpenCompare: () => void;
   onOpenPlayground: () => void;
+  onOpenShare?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -33,6 +35,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenLesson,
   onOpenCompare,
   onOpenPlayground,
+  onOpenShare,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'explore' | 'components' | 'lessons' | 'compare' | 'playground'>('explore');
@@ -65,7 +68,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span>Explore</span>
         </button>
 
-        {/* Core Components Tab (Replaces Systems) */}
+        {/* Core Components Tab */}
         <button
           onClick={() => {
             setActiveTab('components');
@@ -127,8 +130,20 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
       </nav>
 
-      {/* 3. Right Section: Repository Link & Creator Profile Avatar */}
-      <div className="hidden md:flex items-center gap-3 flex-shrink-0">
+      {/* 3. Right Section: Share Button, GitHub Repository Link & Creator Profile Avatar Image */}
+      <div className="hidden md:flex items-center gap-2.5 flex-shrink-0">
+        {/* Share Button */}
+        {onOpenShare && (
+          <button
+            onClick={onOpenShare}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#eb7c6b] text-white font-sans font-bold text-xs shadow-sm hover:bg-[#e87868] transition-all whitespace-nowrap flex-shrink-0"
+            title="Share NeuralDecode 3D Link"
+          >
+            <Share2 className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>Share</span>
+          </button>
+        )}
+
         {/* GitHub Repository Link */}
         <a
           href="https://github.com/balavenkatesh3322/neural-decode-3d"
@@ -141,7 +156,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="font-semibold">Repository</span>
         </a>
 
-        {/* Profile Avatar Badge */}
+        {/* Profile Avatar Image (Replaces BV text badge with Bala Venkatesh portrait photo) */}
         <a
           href="https://balavenkatesh3322.github.io/bala_venkatesh_profile/"
           target="_blank"
@@ -149,21 +164,25 @@ export const Navbar: React.FC<NavbarProps> = ({
           className="flex items-center gap-1.5 cursor-pointer group flex-shrink-0"
           title="Creator Portfolio: Bala Venkatesh"
         >
-          <span className="w-[38px] h-[38px] rounded-full border border-[rgba(82,64,50,0.5)] bg-gradient-to-tr from-[#c46854] to-[#efb59c] text-white font-serif font-bold text-xs flex items-center justify-center shadow-inner ring-4 ring-[#f7eee5] group-hover:scale-105 transition-transform flex-shrink-0">
-            BV
-          </span>
+          <img
+            src="/bv_avatar.jpg"
+            alt="Bala Venkatesh"
+            className="w-[38px] h-[38px] rounded-full object-cover border-2 border-[#eb7c6b] ring-4 ring-[#f7eee5] shadow-md group-hover:scale-105 transition-transform flex-shrink-0"
+          />
           <ChevronDown className="w-3.5 h-3.5 text-[#8d847c] flex-shrink-0" />
         </a>
       </div>
 
       {/* Responsive Mobile Menu Toggle Button (< 768px) */}
       <div className="flex md:hidden items-center gap-2 flex-shrink-0">
-        <button
-          onClick={onOpenBuildingBlocks}
-          className="px-3 py-1.5 rounded-full bg-[#eb7c6b] text-white text-[11px] font-bold whitespace-nowrap"
-        >
-          Components
-        </button>
+        {onOpenShare && (
+          <button
+            onClick={onOpenShare}
+            className="p-1.5 rounded-full bg-[#eb7c6b] text-white"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
+        )}
 
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -196,7 +215,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="flex items-center justify-between p-3 rounded-xl bg-white border border-[rgba(117,91,70,0.18)] text-[#2f2a27] font-medium text-xs"
           >
             <div className="flex items-center gap-2">
-              <UserCheck className="w-4 h-4 text-[#eb7c6b]" />
+              <img src="/bv_avatar.jpg" alt="BV" className="w-6 h-6 rounded-full object-cover border border-[#eb7c6b]" />
               <span>Created by Bala Venkatesh</span>
             </div>
             <Globe className="w-4 h-4 text-[#eb7c6b]" />

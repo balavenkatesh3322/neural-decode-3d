@@ -1,13 +1,12 @@
 import React from 'react';
 import {
   RotateCcw,
-  ZoomIn,
-  ZoomOut,
   Eye,
-  EyeOff,
   Box,
-  Scissors,
-  ArrowRightLeft,
+  Slice,
+  Globe,
+  BarChart2,
+  Layers,
   Sparkles,
 } from 'lucide-react';
 
@@ -16,11 +15,13 @@ interface ToolRibbonProps {
   isWireframe: boolean;
   isCrossSection: boolean;
   isAutoRotate: boolean;
+  isExplodedView?: boolean;
   onResetView: () => void;
   onToggleIsolate: () => void;
   onToggleWireframe: () => void;
   onToggleCrossSection: () => void;
   onToggleAutoRotate: () => void;
+  onToggleExplodedView?: () => void;
   onOpenCompare: () => void;
 }
 
@@ -29,89 +30,100 @@ export const ToolRibbon: React.FC<ToolRibbonProps> = ({
   isWireframe,
   isCrossSection,
   isAutoRotate,
+  isExplodedView = false,
   onResetView,
   onToggleIsolate,
   onToggleWireframe,
   onToggleCrossSection,
   onToggleAutoRotate,
+  onToggleExplodedView,
   onOpenCompare,
 }) => {
   return (
-    <div className="absolute left-6 top-1/2 -translate-y-1/2 flex flex-col gap-2 p-1.5 rounded-2xl bg-white/80 backdrop-blur-md border border-[#E0D9C8] shadow-editorial z-10 select-none">
-      {/* Reset Camera View */}
+    <div className="absolute top-5 left-5 z-20 flex flex-col gap-2 bg-[rgba(255,251,244,0.85)] backdrop-blur-md border border-[rgba(117,91,70,0.18)] p-2 rounded-[20px] shadow-[0_12px_32px_rgba(87,62,43,0.08)] select-none">
+      {/* 1. Reset 3D Viewport Button (RotateCcw) */}
       <button
         onClick={onResetView}
-        className="p-2.5 rounded-xl text-stone-600 hover:text-stone-900 hover:bg-amber-100/60 transition-all group relative"
-        title="Reset Camera View"
+        className="w-10 h-10 rounded-xl flex items-center justify-center text-[#8d847c] hover:text-[#2f2a27] hover:bg-white/60 transition-all group relative"
+        title="Reset 3D Viewport & Camera"
       >
-        <RotateCcw className="w-4 h-4" />
-        <span className="absolute left-12 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-stone-900 text-white text-[10px] font-mono whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
-          Reset View
-        </span>
+        <RotateCcw className="w-5 h-5 group-hover:rotate-[-45deg] transition-transform" />
       </button>
 
-      <div className="w-full h-px bg-stone-200" />
+      {/* 2. Dismantle / Exploded Layers Toggle (Layers Icon) */}
+      {onToggleExplodedView && (
+        <button
+          onClick={onToggleExplodedView}
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative ${
+            isExplodedView
+              ? 'bg-[#eb7c6b] text-white shadow-md ring-2 ring-[#eb7c6b]/40'
+              : 'text-[#8d847c] hover:text-[#2f2a27] hover:bg-white/60'
+          }`}
+          title="Dismantle / Explode 3D Specimen Layers"
+        >
+          <Layers className={`w-5 h-5 ${isExplodedView ? 'animate-pulse' : 'group-hover:scale-110 text-[#eb7c6b]'} transition-transform`} />
+        </button>
+      )}
 
-      {/* Isolate Node View */}
+      {/* 3. Isolate Selected Layer (Eye Icon) */}
       <button
         onClick={onToggleIsolate}
-        className={`p-2.5 rounded-xl transition-all group relative ${
+        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative ${
           isIsolated
-            ? 'bg-amber-500 text-white shadow-sm'
-            : 'text-stone-600 hover:text-stone-900 hover:bg-amber-100/60'
+            ? 'bg-[#eb7c6b] text-white shadow-md'
+            : 'text-[#8d847c] hover:text-[#2f2a27] hover:bg-white/60'
         }`}
-        title="Isolate Active Node"
+        title="Isolate Layer Mesh"
       >
-        {isIsolated ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-        <span className="absolute left-12 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-stone-900 text-white text-[10px] font-mono whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
-          {isIsolated ? 'Show All Layers' : 'Isolate Layer'}
-        </span>
+        <Eye className="w-5 h-5 group-hover:scale-110 transition-transform" />
       </button>
 
-      {/* Wireframe X-Ray Mode */}
+      {/* 4. Wireframe X-Ray Mode (Box Icon) */}
       <button
         onClick={onToggleWireframe}
-        className={`p-2.5 rounded-xl transition-all group relative ${
+        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative ${
           isWireframe
-            ? 'bg-stone-900 text-amber-400 shadow-sm'
-            : 'text-stone-600 hover:text-stone-900 hover:bg-amber-100/60'
+            ? 'bg-[#eb7c6b] text-white shadow-md'
+            : 'text-[#8d847c] hover:text-[#2f2a27] hover:bg-white/60'
         }`}
-        title="Wireframe X-Ray Mode"
+        title="Toggle X-Ray Wireframe"
       >
-        <Box className="w-4 h-4" />
-        <span className="absolute left-12 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-stone-900 text-white text-[10px] font-mono whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
-          Wireframe X-Ray
-        </span>
+        <Box className="w-5 h-5 group-hover:scale-110 transition-transform" />
       </button>
 
-      {/* Cross-Section View */}
+      {/* 5. Cross-Section Anatomical Cut (Slice Icon) */}
       <button
         onClick={onToggleCrossSection}
-        className={`p-2.5 rounded-xl transition-all group relative ${
+        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative ${
           isCrossSection
-            ? 'bg-amber-500 text-white shadow-sm'
-            : 'text-stone-600 hover:text-stone-900 hover:bg-amber-100/60'
+            ? 'bg-[#eb7c6b] text-white shadow-md'
+            : 'text-[#8d847c] hover:text-[#2f2a27] hover:bg-white/60'
         }`}
-        title="Cross-Section Cutaway"
+        title="Cross-Section Anatomical Cut"
       >
-        <Scissors className="w-4 h-4" />
-        <span className="absolute left-12 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-stone-900 text-white text-[10px] font-mono whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
-          Cross-Section View
-        </span>
+        <Slice className="w-5 h-5 group-hover:scale-110 transition-transform" />
       </button>
 
-      <div className="w-full h-px bg-stone-200" />
+      {/* 6. Auto Rotate 3D Orbit (Globe Icon - Replaces Duplicate Refresh Icon) */}
+      <button
+        onClick={onToggleAutoRotate}
+        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative ${
+          isAutoRotate
+            ? 'bg-[#eb7c6b] text-white shadow-md'
+            : 'text-[#8d847c] hover:text-[#2f2a27] hover:bg-white/60'
+        }`}
+        title="Auto-Rotate 3D Orbit Camera"
+      >
+        <Globe className={`w-5 h-5 ${isAutoRotate ? 'animate-spin' : 'group-hover:scale-110'} transition-transform`} />
+      </button>
 
-      {/* Model Compare */}
+      {/* 7. Compare Architectures (BarChart2 Icon) */}
       <button
         onClick={onOpenCompare}
-        className="p-2.5 rounded-xl text-stone-600 hover:text-stone-900 hover:bg-amber-100/60 transition-all group relative"
-        title="Compare Models"
+        className="w-10 h-10 rounded-xl flex items-center justify-center text-[#8d847c] hover:text-[#eb7c6b] hover:bg-white/60 transition-all group relative"
+        title="Compare Architectures"
       >
-        <ArrowRightLeft className="w-4 h-4" />
-        <span className="absolute left-12 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-stone-900 text-white text-[10px] font-mono whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
-          Compare Architectures
-        </span>
+        <BarChart2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
       </button>
     </div>
   );

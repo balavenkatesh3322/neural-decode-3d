@@ -12,6 +12,9 @@ import { QuizModal } from './components/modals/QuizModal';
 import { CompareModal } from './components/modals/CompareModal';
 import { PlaygroundModal } from './components/modals/PlaygroundModal';
 import { BuildingBlocksModal } from './components/modals/BuildingBlocksModal';
+import { ComponentDetailModal } from './components/modals/ComponentDetailModal';
+import { EndToEndPipelineModal } from './components/modals/EndToEndPipelineModal';
+import { ShareModal } from './components/modals/ShareModal';
 import { TrainingProgressWidget } from './components/layout/TrainingProgressWidget';
 import { HelpCircle, Sparkles } from 'lucide-react';
 
@@ -35,6 +38,7 @@ export function App() {
   const [isWireframe, setIsWireframe] = useState(false);
   const [isCrossSection, setIsCrossSection] = useState(false);
   const [isAutoRotate, setIsAutoRotate] = useState(false);
+  const [isExplodedView, setIsExplodedView] = useState(false);
 
   // Animation Mode State
   const [isPlayingAnimation, setIsPlayingAnimation] = useState(false);
@@ -51,8 +55,11 @@ export function App() {
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(false);
   const [isBuildingBlocksOpen, setIsBuildingBlocksOpen] = useState(false);
+  const [isComponentDetailOpen, setIsComponentDetailOpen] = useState(false);
+  const [isEndToEndPipelineOpen, setIsEndToEndPipelineOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
-  const isModalOpen = isLessonOpen || isQuizOpen || isCompareOpen || isPlaygroundOpen || isBuildingBlocksOpen;
+  const isModalOpen = isLessonOpen || isQuizOpen || isCompareOpen || isPlaygroundOpen || isBuildingBlocksOpen || isComponentDetailOpen || isEndToEndPipelineOpen || isShareOpen;
 
   const activeArchitecture = useMemo(
     () => ARCHITECTURES_BY_ID[selectedArchId] || ALL_ARCHITECTURES[0],
@@ -92,9 +99,12 @@ export function App() {
     });
   }, [activeCategory, searchQuery]);
 
-  // Select node handler
-  const handleSelectNode = (component: NodeComponent) => {
+  // Component Selection Handler
+  const handleSelectNode = (component: NodeComponent | null) => {
     setSelectedNode(component);
+    if (component) {
+      setIsComponentDetailOpen(true);
+    }
   };
 
   // Switch architecture handler
@@ -157,7 +167,8 @@ export function App() {
         onOpenLesson={() => setIsLessonOpen(true)}
         onOpenQuiz={() => setIsQuizOpen(true)}
         onOpenCompare={() => setIsCompareOpen(true)}
-        onOpenPlayground={() => setIsPlaygroundOpen(true)}
+        onOpenPlayground={() => setIsEndToEndPipelineOpen(true)}
+        onOpenShare={() => setIsShareOpen(true)}
       />
 
       {/* Main Workspace Area (Matching Anatomy Atelier .workspace 3-column grid) */}
@@ -184,6 +195,7 @@ export function App() {
             isWireframe={isWireframe}
             isCrossSection={isCrossSection}
             isAutoRotate={isAutoRotate}
+            isExplodedView={isExplodedView}
             isPlayingAnimation={isPlayingAnimation}
             trainingPhase={trainingPhase}
             isModalOpen={isModalOpen}
@@ -198,17 +210,20 @@ export function App() {
             isWireframe={isWireframe}
             isCrossSection={isCrossSection}
             isAutoRotate={isAutoRotate}
+            isExplodedView={isExplodedView}
             onResetView={() => {
               setSelectedNode(null);
               setIsIsolated(false);
               setIsWireframe(false);
               setIsCrossSection(false);
+              setIsExplodedView(false);
               setCurrentStepIndex(1);
             }}
             onToggleIsolate={() => setIsIsolated(!isIsolated)}
             onToggleWireframe={() => setIsWireframe(!isWireframe)}
             onToggleCrossSection={() => setIsCrossSection(!isCrossSection)}
             onToggleAutoRotate={() => setIsAutoRotate(!isAutoRotate)}
+            onToggleExplodedView={() => setIsExplodedView(!isExplodedView)}
             onOpenCompare={() => setIsCompareOpen(true)}
           />
 
@@ -274,6 +289,26 @@ export function App() {
       {isBuildingBlocksOpen && (
         <BuildingBlocksModal
           onClose={() => setIsBuildingBlocksOpen(false)}
+        />
+      )}
+
+      {isComponentDetailOpen && selectedNode && (
+        <ComponentDetailModal
+          component={selectedNode}
+          architecture={activeArchitecture}
+          onClose={() => setIsComponentDetailOpen(false)}
+        />
+      )}
+
+      {isEndToEndPipelineOpen && (
+        <EndToEndPipelineModal
+          onClose={() => setIsEndToEndPipelineOpen(false)}
+        />
+      )}
+
+      {isShareOpen && (
+        <ShareModal
+          onClose={() => setIsShareOpen(false)}
         />
       )}
     </div>

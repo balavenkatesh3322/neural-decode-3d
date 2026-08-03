@@ -11,6 +11,7 @@ interface Transformer3DProps {
   isIsolated?: boolean;
   isWireframe?: boolean;
   isCrossSection?: boolean;
+  isExplodedView?: boolean;
   isModalOpen?: boolean;
   onSelectNode: (component: NodeComponent) => void;
 }
@@ -22,6 +23,7 @@ export const Transformer3D: React.FC<Transformer3DProps> = ({
   isIsolated = false,
   isWireframe = false,
   isCrossSection = false,
+  isExplodedView = false,
   isModalOpen = false,
   onSelectNode,
 }) => {
