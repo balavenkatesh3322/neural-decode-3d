@@ -1,0 +1,283 @@
+import React, { useState, useMemo, useEffect } from 'react';
+import { SystemCategory, Architecture, NodeComponent } from './types/architecture';
+import { ALL_ARCHITECTURES, ARCHITECTURES_BY_ID } from './data/architectures';
+import { Navbar } from './components/layout/Navbar';
+import { LeftSidebar } from './components/layout/LeftSidebar';
+import { RightSidebar } from './components/layout/RightSidebar';
+import { ToolRibbon } from './components/layout/ToolRibbon';
+import { AnimationPlayerBar } from './components/layout/AnimationPlayerBar';
+import { CanvasContainer } from './components/3d/CanvasContainer';
+import { LessonModal } from './components/modals/LessonModal';
+import { QuizModal } from './components/modals/QuizModal';
+import { CompareModal } from './components/modals/CompareModal';
+import { PlaygroundModal } from './components/modals/PlaygroundModal';
+import { BuildingBlocksModal } from './components/modals/BuildingBlocksModal';
+import { TrainingProgressWidget } from './components/layout/TrainingProgressWidget';
+import { HelpCircle, Sparkles } from 'lucide-react';
+
+export function App() {
+  // Navigation & View Mode State
+  const [viewMode, setViewMode] = useState<'blocks' | 'architectures'>('architectures');
+  const [activeBlockId, setActiveBlockId] = useState<string>('weight-bias');
+  const [weightVal, setWeightVal] = useState<number>(1.5);
+  const [biasVal, setBiasVal] = useState<number>(0.5);
+  const [inputXVal, setInputXVal] = useState<number>(2.0);
+  const [activationFunc, setActivationFunc] = useState<'relu' | 'sigmoid' | 'gelu' | 'silu'>('relu');
+  const [trainingPhase, setTrainingPhase] = useState<'before' | 'while' | 'after'>('after');
+
+  const [activeCategory, setActiveCategory] = useState<SystemCategory | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedArchId, setSelectedArchId] = useState<string>('transformer');
+  const [selectedNode, setSelectedNode] = useState<NodeComponent | null>(null);
+
+  // 3D Canvas View Options
+  const [isIsolated, setIsIsolated] = useState(false);
+  const [isWireframe, setIsWireframe] = useState(false);
+  const [isCrossSection, setIsCrossSection] = useState(false);
+  const [isAutoRotate, setIsAutoRotate] = useState(false);
+
+  // Animation Mode State
+  const [isPlayingAnimation, setIsPlayingAnimation] = useState(false);
+  const [currentStepIndex, setCurrentStepIndex] = useState(1);
+
+  // Sidebar Collapse Minimize States
+  const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
+  const [isRightCollapsed, setIsRightCollapsed] = useState(false);
+
+  // Modal Open States
+  const [isLessonOpen, setIsLessonOpen] = useState(false);
+  const [isQuizOpen, setIsQuizOpen] = useState(false);
+  const [isCompareOpen, setIsCompareOpen] = useState(false);
+  const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(false);
+  const [isBuildingBlocksOpen, setIsBuildingBlocksOpen] = useState(false);
+
+  const isModalOpen = isLessonOpen || isQuizOpen || isCompareOpen || isPlaygroundOpen || isBuildingBlocksOpen;
+
+  const activeArchitecture = useMemo(
+    () => ARCHITECTURES_BY_ID[selectedArchId] || ALL_ARCHITECTURES[0],
+    [selectedArchId]
+  );
+
+  // Automated Step Progression Timer during animation playback
+  useEffect(() => {
+    let interval: any = null;
+    if (isPlayingAnimation) {
+      interval = setInterval(() => {
+        setCurrentStepIndex((prevStep) => {
+          const totalSteps = activeArchitecture.dataFlowSteps.length;
+          const nextStep = prevStep >= totalSteps ? 1 : prevStep + 1;
+          const stepObj = activeArchitecture.dataFlowSteps.find((s) => s.stepIndex === nextStep);
+          if (stepObj) {
+            const node = activeArchitecture.components.find((c) => c.id === stepObj.activeNodeId);
+            if (node) setSelectedNode(node);
+          }
+          return nextStep;
+        });
+      }, 2500);
+    }
+    return () => clearInterval(interval);
+  }, [isPlayingAnimation, activeArchitecture]);
+
+  // Filter architectures based on category and search query
+  const filteredArchitectures = useMemo(() => {
+    return ALL_ARCHITECTURES.filter((arch) => {
+      const categoryMatch = activeCategory === 'all' || arch.category === activeCategory;
+      const searchMatch =
+        searchQuery.trim() === '' ||
+        arch.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        arch.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        arch.components.some((c) => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      return categoryMatch && searchMatch;
+    });
+  }, [activeCategory, searchQuery]);
+
+  // Select node handler
+  const handleSelectNode = (component: NodeComponent) => {
+    setSelectedNode(component);
+  };
+
+  // Switch architecture handler
+  const handleSelectArchitecture = (arch: Architecture) => {
+    setSelectedArchId(arch.id);
+    setSelectedNode(null);
+    setCurrentStepIndex(1);
+    setIsPlayingAnimation(false);
+    setIsIsolated(false);
+  };
+
+  // Animation Step Handlers
+  const handleStepNext = () => {
+    if (currentStepIndex < activeArchitecture.dataFlowSteps.length) {
+      const nextIdx = currentStepIndex + 1;
+      setCurrentStepIndex(nextIdx);
+      const step = activeArchitecture.dataFlowSteps.find((s) => s.stepIndex === nextIdx);
+      if (step) {
+        const node = activeArchitecture.components.find((c) => c.id === step.activeNodeId);
+        if (node) setSelectedNode(node);
+      }
+    }
+  };
+
+  const handleStepPrev = () => {
+    if (currentStepIndex > 1) {
+      const prevIdx = currentStepIndex - 1;
+      setCurrentStepIndex(prevIdx);
+      const step = activeArchitecture.dataFlowSteps.find((s) => s.stepIndex === prevIdx);
+      if (step) {
+        const node = activeArchitecture.components.find((c) => c.id === step.activeNodeId);
+        if (node) setSelectedNode(node);
+      }
+    }
+  };
+
+  const handleSelectStep = (stepIndex: number) => {
+    setCurrentStepIndex(stepIndex);
+    const step = activeArchitecture.dataFlowSteps.find((s) => s.stepIndex === stepIndex);
+    if (step) {
+      const node = activeArchitecture.components.find((c) => c.id === step.activeNodeId);
+      if (node) setSelectedNode(node);
+    }
+  };
+
+  return (
+    <div className="flex flex-col w-screen h-screen bg-[#FBF9F5] text-stone-900 overflow-hidden font-sans">
+      {/* Navigation Header Bar */}
+      <Navbar
+        activeCategory={activeCategory}
+        searchQuery={searchQuery}
+        isLeftCollapsed={isLeftCollapsed}
+        isRightCollapsed={isRightCollapsed}
+        onToggleLeftSidebar={() => setIsLeftCollapsed(!isLeftCollapsed)}
+        onToggleRightSidebar={() => setIsRightCollapsed(!isRightCollapsed)}
+        onSelectCategory={setActiveCategory}
+        onSearchChange={setSearchQuery}
+        onOpenBuildingBlocks={() => setIsBuildingBlocksOpen(true)}
+        onOpenLesson={() => setIsLessonOpen(true)}
+        onOpenQuiz={() => setIsQuizOpen(true)}
+        onOpenCompare={() => setIsCompareOpen(true)}
+        onOpenPlayground={() => setIsPlaygroundOpen(true)}
+      />
+
+      {/* Main Workspace Area */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Left Architecture Library Sidebar */}
+        <LeftSidebar
+          architectures={filteredArchitectures}
+          selectedArchId={selectedArchId}
+          isCollapsed={isLeftCollapsed}
+          onToggleCollapse={() => setIsLeftCollapsed(!isLeftCollapsed)}
+          onSelectArchitecture={handleSelectArchitecture}
+        />
+
+        {/* Center Interactive 3D WebGL Canvas Viewport with View Transition */}
+        <main key={selectedArchId} className="flex-1 relative h-full animate-page-transition">
+          <CanvasContainer
+            viewMode={viewMode}
+            activeBlockId={activeBlockId}
+            weightVal={weightVal}
+            biasVal={biasVal}
+            inputXVal={inputXVal}
+            activationFunc={activationFunc}
+            architecture={activeArchitecture}
+            selectedNode={selectedNode}
+            isIsolated={isIsolated}
+            isWireframe={isWireframe}
+            isCrossSection={isCrossSection}
+            isAutoRotate={isAutoRotate}
+            isPlayingAnimation={isPlayingAnimation}
+            trainingPhase={trainingPhase}
+            isModalOpen={isModalOpen}
+            activeStepNodeId={activeArchitecture.dataFlowSteps.find((s) => s.stepIndex === currentStepIndex)?.activeNodeId}
+            onSelectNode={handleSelectNode}
+          />
+
+          {/* Vertical Left Tool Ribbon */}
+          <ToolRibbon
+            isIsolated={isIsolated}
+            isWireframe={isWireframe}
+            isCrossSection={isCrossSection}
+            isAutoRotate={isAutoRotate}
+            onResetView={() => {
+              setSelectedNode(null);
+              setIsIsolated(false);
+              setIsWireframe(false);
+              setIsCrossSection(false);
+              setCurrentStepIndex(1);
+            }}
+            onToggleIsolate={() => setIsIsolated(!isIsolated)}
+            onToggleWireframe={() => setIsWireframe(!isWireframe)}
+            onToggleCrossSection={() => setIsCrossSection(!isCrossSection)}
+            onToggleAutoRotate={() => setIsAutoRotate(!isAutoRotate)}
+            onOpenCompare={() => setIsCompareOpen(true)}
+          />
+
+          {/* Floating Sticky Tip Note (Anatomy Atelier Signature Detail) */}
+          <div className="absolute top-6 right-6 p-3.5 rounded-2xl bg-amber-100/90 backdrop-blur-md border border-amber-200 shadow-editorial text-xs text-amber-900 max-w-xs z-10 pointer-events-none select-none">
+            <div className="flex items-center gap-1.5 font-bold mb-1">
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+              <span>3D Specimen Interaction Tip</span>
+            </div>
+            <ul className="space-y-0.5 text-[11px] font-sans opacity-90">
+              <li>• Drag canvas to orbit rotate in 3D</li>
+              <li>• Scroll to zoom into tensor nodes</li>
+              <li>• Click any glowing 3D hotspot pin to inspect math</li>
+            </ul>
+          </div>
+
+        </main>
+
+        {/* Right Deep Component & Training Inspector Sidebar */}
+        <RightSidebar
+          architecture={activeArchitecture}
+          selectedNode={selectedNode}
+          currentStepIndex={currentStepIndex}
+          isPlayingAnimation={isPlayingAnimation}
+          isCollapsed={isRightCollapsed}
+          onToggleCollapse={() => setIsRightCollapsed(!isRightCollapsed)}
+          onTogglePlayAnimation={() => setIsPlayingAnimation(!isPlayingAnimation)}
+          onSelectNode={handleSelectNode}
+        />
+      </div>
+
+      {/* Modals */}
+      {isLessonOpen && (
+        <LessonModal
+          architecture={activeArchitecture}
+          onClose={() => setIsLessonOpen(false)}
+          onSelectStepNode={(nodeId) => {
+            const node = activeArchitecture.components.find((c) => c.id === nodeId);
+            if (node) setSelectedNode(node);
+          }}
+        />
+      )}
+
+      {isQuizOpen && (
+        <QuizModal
+          architecture={activeArchitecture}
+          onClose={() => setIsQuizOpen(false)}
+        />
+      )}
+
+      {isCompareOpen && (
+        <CompareModal
+          currentArchitecture={activeArchitecture}
+          onClose={() => setIsCompareOpen(false)}
+        />
+      )}
+
+      {isPlaygroundOpen && (
+        <PlaygroundModal
+          architecture={activeArchitecture}
+          onClose={() => setIsPlaygroundOpen(false)}
+          onAnimateWithPrompt={() => setIsPlayingAnimation(true)}
+        />
+      )}
+
+      {isBuildingBlocksOpen && (
+        <BuildingBlocksModal
+          onClose={() => setIsBuildingBlocksOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
