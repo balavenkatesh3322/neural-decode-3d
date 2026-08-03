@@ -80,8 +80,8 @@ export const BuildingBlocksModal: React.FC<BuildingBlocksModalProps> = ({ onClos
               <BookMarked className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] font-mono font-bold tracking-wider text-amber-700 uppercase">
-                Neural Building Blocks Encyclopedia
+              <span className="text-[10px] font-mono font-bold tracking-wider text-[#eb7c6b] uppercase">
+                Neural Core Components Encyclopedia
               </span>
               <h2 className="font-serif font-bold text-xl text-stone-900">
                 Atomic Component Inspector & Training Mechanics

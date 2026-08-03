@@ -9,6 +9,8 @@ export const transformerArchitecture: Architecture = {
   badge: 'GPT-4 / Llama 3',
   tagline: 'The foundational parallel-attention architecture powering state-of-the-art LLMs.',
   description: 'Transformers process sequence tokens in parallel by calculating dynamic pairwise attention scores between every token pair, transforming input embeddings through multi-head projection layers and non-linear feed-forward projections.',
+  paperUrl: 'https://arxiv.org/abs/1706.03762',
+  paperTitle: 'Attention Is All You Need (Vaswani et al.)',
   thumbnail: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=400&auto=format&fit=crop',
   defaultCameraPosition: [0, 4, 18],
   defaultCameraTarget: [0, 0, 0],

@@ -3,23 +3,47 @@
 @import 'tailwindcss/utilities';
 
 :root {
-  --bg-cream: #FBF9F5;
-  --bg-linen: #F3EEE3;
-  --border-linen: #E8E3D8;
-  --border-dark-linen: #E0D9C8;
-  --text-charcoal: #1C1917;
-  --accent-gold: #D97706;
-  --accent-gold-bright: #F59E0B;
+  --ink: #2f2a27;
+  --muted: #8d847c;
+  --canvas: #f7f0e7;
+  --paper: rgba(255, 251, 244, 0.82);
+  --line: rgba(117, 91, 70, 0.18);
+  --coral: #eb7c6b;
+  --coral-light: rgba(238, 124, 106, 0.08);
+  --lavender: #8d6bcc;
+  --lavender-light: rgba(142, 109, 197, 0.065);
+  --sage: #769d74;
+  --shadow: 0 18px 48px rgba(87, 62, 43, 0.06);
 }
 
 body {
   margin: 0;
   padding: 0;
-  background-color: var(--bg-cream);
-  color: var(--text-charcoal);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--canvas);
+  background-image: 
+    radial-gradient(circle at 48% 22%, rgba(255, 255, 255, 0.96), transparent 34%),
+    linear-gradient(135deg, #f7f1e8, #fdf9f2 48%, #f2e9dd);
+  color: var(--ink);
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Exact Anatomy Atelier Typography Utilities */
+.font-serif {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+}
+
+.font-sans {
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+}
+
+.font-cursive {
+  font-family: 'Comic Sans MS', 'Bradley Hand', cursive;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
 }
 
 /* Vertical Text Helper Class */
@@ -28,24 +52,24 @@ body {
   text-orientation: mixed;
 }
 
-/* Custom Scrollbar for Editorial Panels */
+/* Custom Scrollbar for Anatomy Atelier Panels */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(232, 227, 216, 0.4);
+  background: rgba(117, 91, 70, 0.06);
   border-radius: 9999px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(217, 119, 6, 0.4);
+  background: rgba(235, 124, 107, 0.35);
   border-radius: 9999px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(217, 119, 6, 0.7);
+  background: rgba(235, 124, 107, 0.7);
 }
 
 /* View Transition Animations */

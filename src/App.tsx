@@ -40,9 +40,10 @@ export function App() {
   const [isPlayingAnimation, setIsPlayingAnimation] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(1);
 
-  // Sidebar Collapse Minimize States
+  // Sidebar Collapse Minimize States & Transition Load State
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
   const [isRightCollapsed, setIsRightCollapsed] = useState(false);
+  const [isLoadingArchitecture, setIsLoadingArchitecture] = useState(false);
 
   // Modal Open States
   const [isLessonOpen, setIsLessonOpen] = useState(false);
@@ -101,8 +102,13 @@ export function App() {
     setSelectedArchId(arch.id);
     setSelectedNode(null);
     setCurrentStepIndex(1);
-    setIsPlayingAnimation(false);
     setIsIsolated(false);
+    setIsWireframe(false);
+    setIsCrossSection(false);
+    setIsLoadingArchitecture(true);
+    setTimeout(() => {
+      setIsLoadingArchitecture(false);
+    }, 450);
   };
 
   // Animation Step Handlers
@@ -141,14 +147,10 @@ export function App() {
 
   return (
     <div className="flex flex-col w-screen h-screen bg-[#FBF9F5] text-stone-900 overflow-hidden font-sans">
-      {/* Navigation Header Bar */}
+      {/* Navbar Header Area */}
       <Navbar
         activeCategory={activeCategory}
         searchQuery={searchQuery}
-        isLeftCollapsed={isLeftCollapsed}
-        isRightCollapsed={isRightCollapsed}
-        onToggleLeftSidebar={() => setIsLeftCollapsed(!isLeftCollapsed)}
-        onToggleRightSidebar={() => setIsRightCollapsed(!isRightCollapsed)}
         onSelectCategory={setActiveCategory}
         onSearchChange={setSearchQuery}
         onOpenBuildingBlocks={() => setIsBuildingBlocksOpen(true)}
@@ -158,19 +160,17 @@ export function App() {
         onOpenPlayground={() => setIsPlaygroundOpen(true)}
       />
 
-      {/* Main Workspace Area */}
-      <div className="flex-1 flex overflow-hidden relative">
+      {/* Main Workspace Area (Matching Anatomy Atelier .workspace 3-column grid) */}
+      <div className="workspace max-w-[1720px] w-full mx-auto flex-1 grid grid-cols-[285px_minmax(620px,1fr)_330px] gap-[18px] my-3 overflow-hidden px-4 md:px-6">
         {/* Left Architecture Library Sidebar */}
         <LeftSidebar
           architectures={filteredArchitectures}
           selectedArchId={selectedArchId}
-          isCollapsed={isLeftCollapsed}
-          onToggleCollapse={() => setIsLeftCollapsed(!isLeftCollapsed)}
           onSelectArchitecture={handleSelectArchitecture}
         />
 
-        {/* Center Interactive 3D WebGL Canvas Viewport with View Transition */}
-        <main key={selectedArchId} className="flex-1 relative h-full animate-page-transition">
+        {/* Center Interactive 3D WebGL Canvas Viewport (.viewer-shell) */}
+        <main key={selectedArchId} className="viewer-shell relative h-full rounded-[26px] border border-[rgba(117,91,70,0.18)] bg-[rgba(255,251,244,0.82)] shadow-[0_18px_48px_rgba(87,62,43,0.06)] overflow-hidden animate-page-transition">
           <CanvasContainer
             viewMode={viewMode}
             activeBlockId={activeBlockId}
@@ -187,6 +187,7 @@ export function App() {
             isPlayingAnimation={isPlayingAnimation}
             trainingPhase={trainingPhase}
             isModalOpen={isModalOpen}
+            isLoading={isLoadingArchitecture}
             activeStepNodeId={activeArchitecture.dataFlowSteps.find((s) => s.stepIndex === currentStepIndex)?.activeNodeId}
             onSelectNode={handleSelectNode}
           />
@@ -212,18 +213,17 @@ export function App() {
           />
 
           {/* Floating Sticky Tip Note (Anatomy Atelier Signature Detail) */}
-          <div className="absolute top-6 right-6 p-3.5 rounded-2xl bg-amber-100/90 backdrop-blur-md border border-amber-200 shadow-editorial text-xs text-amber-900 max-w-xs z-10 pointer-events-none select-none">
-            <div className="flex items-center gap-1.5 font-bold mb-1">
-              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+          <div className="absolute top-5 right-5 p-3 rounded-2xl bg-[#fff2c9] border border-[#f0e2b0] shadow-md text-xs text-[#534a43] max-w-xs z-10 pointer-events-none select-none">
+            <div className="flex items-center gap-1.5 font-bold mb-1 text-[#8d6bcc] font-cursive italic">
+              <Sparkles className="w-3.5 h-3.5 text-[#eb7c6b]" />
               <span>3D Specimen Interaction Tip</span>
             </div>
-            <ul className="space-y-0.5 text-[11px] font-sans opacity-90">
+            <ul className="space-y-0.5 text-[10px] font-sans opacity-90 text-[#534a43]">
               <li>• Drag canvas to orbit rotate in 3D</li>
               <li>• Scroll to zoom into tensor nodes</li>
               <li>• Click any glowing 3D hotspot pin to inspect math</li>
             </ul>
           </div>
-
         </main>
 
         {/* Right Deep Component & Training Inspector Sidebar */}
@@ -232,8 +232,6 @@ export function App() {
           selectedNode={selectedNode}
           currentStepIndex={currentStepIndex}
           isPlayingAnimation={isPlayingAnimation}
-          isCollapsed={isRightCollapsed}
-          onToggleCollapse={() => setIsRightCollapsed(!isRightCollapsed)}
           onTogglePlayAnimation={() => setIsPlayingAnimation(!isPlayingAnimation)}
           onSelectNode={handleSelectNode}
         />

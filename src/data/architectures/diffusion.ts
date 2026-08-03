@@ -9,6 +9,8 @@ export const diffusionArchitecture: Architecture = {
   badge: 'Stable Diffusion 3 / FLUX.1',
   tagline: 'Transform pure Gaussian noise into photorealistic high-resolution imagery through iterative cross-attention score matching.',
   description: 'Latent Diffusion models learn the reverse Markov chain of a Gaussian noise process.',
+  paperUrl: 'https://arxiv.org/abs/2112.10752',
+  paperTitle: 'High-Resolution Image Synthesis with Latent Diffusion Models (Rombach et al.)',
   thumbnail: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=400&auto=format&fit=crop',
   defaultCameraPosition: [0, 4, 18],
   defaultCameraTarget: [0, 0, 0],

@@ -75,6 +75,8 @@ export interface Architecture {
     inventedYear: string;
     keyInnovations: string;
   };
+  paperUrl?: string;
+  paperTitle?: string;
   components: NodeComponent[];
   dataFlowSteps: DataFlowStep[];
   quizQuestions: QuizQuestion[];

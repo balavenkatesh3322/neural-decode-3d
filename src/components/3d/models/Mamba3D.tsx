@@ -45,9 +45,9 @@ export const Mamba3D: React.FC<Model3DProps> = ({
     if (isIsolated) {
       if (isSelected) {
         return {
-          color: '#F59E0B',
-          emissive: '#FBBF24',
-          emissiveIntensity: 1.0,
+          color: '#eb7c6b',
+          emissive: '#eb7c6b',
+          emissiveIntensity: 0.9,
           wireframe: isWireframe,
           transparent: false,
           opacity: 1,
@@ -65,9 +65,9 @@ export const Mamba3D: React.FC<Model3DProps> = ({
 
     if (isSelected) {
       return {
-        color: '#F59E0B',
-        emissive: '#FBBF24',
-        emissiveIntensity: 0.9,
+        color: '#eb7c6b',
+        emissive: '#eb7c6b',
+        emissiveIntensity: 0.8,
         wireframe: isWireframe,
         transparent: isCrossSection,
         opacity: isCrossSection ? 0.45 : 1,
