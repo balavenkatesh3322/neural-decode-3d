@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import { useAppStore } from '../../store/useAppStore';
+import { resolveArchitecture, specToHash } from '../../engine/registry';
 import {
   X,
   Share2,
@@ -19,20 +21,28 @@ interface ShareModalProps {
 
 export const ShareModal: React.FC<ShareModalProps> = ({ onClose }) => {
   const [copied, setCopied] = useState(false);
-  const shareUrl = 'https://neuraldecode.vercel.app/';
-  const shareTitle = 'NeuralDecode 3D — Learn AI Architecture Like an Artist';
-  const shareSummary = 'Interactive 3D WebGL Web Engine for AI Neural Networks. Explore Transformer, MoE, CNN, Mamba, and Diffusion in 3D!';
+  const archId = useAppStore((st) => st.archId);
+  const custom = useAppStore((st) => st.custom);
+  const { architecture, spec } = resolveArchitecture(archId, custom);
+  // built-in models get a short link; your own models travel inside the link itself
+  const base = `${window.location.origin}${window.location.pathname}`;
+  const shareUrl = custom[archId] ? `${base}#${specToHash(spec)}` : `${base}#arch=${encodeURIComponent(archId)}`;
+  const shareTitle = `${architecture.name} in 3D — NeuralDecode`;
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(shareUrl);
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+    } catch {
+      // clipboard blocked (http, iframe): select the text so the user can copy manually
+      const input = document.getElementById('share-url') as HTMLInputElement | null;
+      input?.select();
+    }
     setCopied(true);
-    confetti({
-      particleCount: 80,
-      spread: 70,
-      origin: { y: 0.6 },
-    });
+    confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
     setTimeout(() => setCopied(false), 2500);
   };
+
+  const nativeShare = typeof navigator !== 'undefined' && 'share' in navigator;
 
   const socialLinks = [
     {
@@ -124,10 +134,21 @@ export const ShareModal: React.FC<ShareModalProps> = ({ onClose }) => {
             })}
           </div>
 
+          {nativeShare && (
+            <button
+              onClick={() => navigator.share({ title: shareTitle, url: shareUrl }).catch(() => undefined)}
+              className="w-full mb-3 flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-[#2f2a27] text-white text-xs font-bold"
+            >
+              <Share2 className="w-4 h-4" /> Share via your device…
+            </button>
+          )}
           {/* Copy Link Input Bar */}
           <div className="p-3 rounded-2xl bg-white border border-[rgba(117,91,70,0.18)] flex items-center gap-2 shadow-inner">
             <input
+              id="share-url"
               type="text"
+              aria-label="Link to share"
+              onFocus={(e) => e.currentTarget.select()}
               readOnly
               value={shareUrl}
               className="flex-1 text-xs font-mono text-[#8d847c] bg-transparent focus:outline-none truncate"

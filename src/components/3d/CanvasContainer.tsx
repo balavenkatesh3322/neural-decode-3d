@@ -1,301 +1,154 @@
-import React, { useRef, useEffect } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
-import * as THREE from 'three';
-import { Architecture, NodeComponent } from '../../types/architecture';
-import { HotspotPin } from './HotspotPin';
-import { SignalPulseStream } from './SignalPulseStream';
-import { Transformer3D } from './models/Transformer3D';
-import { FullTransformer3D } from './models/FullTransformer3D';
-import { MoE3D } from './models/MoE3D';
-import { CNN3D } from './models/CNN3D';
-import { Mamba3D } from './models/Mamba3D';
-import { Diffusion3D } from './models/Diffusion3D';
-import { WeightBias3DBlock } from './blocks/WeightBias3DBlock';
-import { Activation3DBlock } from './blocks/Activation3DBlock';
-import { LossGradient3DBlock } from './blocks/LossGradient3DBlock';
-import { Embedding3DBlock } from './blocks/Embedding3DBlock';
-import { Loader2, Boxes, Sparkles, Activity, Layers } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { AdaptiveDpr, Environment, Grid, Lightformer, PerformanceMonitor } from '@react-three/drei';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Boxes, AlertTriangle } from 'lucide-react';
+import type { ArchitectureModel } from '../../engine/useArchitectureModel';
+import { useSceneModel } from '../../engine/useSceneModel';
+import { GraphScene } from '../../engine/render/GraphScene';
+import { BACKGROUND } from '../../engine/render/style';
+import { useAppStore } from '../../store/useAppStore';
+import { isMobileNow } from '../../hooks/useIsMobile';
+import { MiniMap } from '../../features/minimap/MiniMap';
+import { Lens, LensPointer } from '../../engine/render/Lens';
+import { ViewControls } from '../../features/viewcontrols/ViewControls';
 
-interface CanvasContainerProps {
-  viewMode: 'blocks' | 'architectures';
-  activeBlockId: string;
-  weightVal: number;
-  biasVal: number;
-  inputXVal: number;
-  activationFunc: 'relu' | 'sigmoid' | 'gelu' | 'silu';
-  architecture: Architecture;
-  selectedNode: NodeComponent | null;
-  hoveredNodeId?: string;
-  isIsolated: boolean;
-  isWireframe: boolean;
-  isCrossSection: boolean;
-  isAutoRotate: boolean;
-  isExplodedView?: boolean;
-  isPlayingAnimation: boolean;
-  trainingPhase?: 'before' | 'while' | 'after';
-  isModalOpen?: boolean;
-  isLoading?: boolean;
-  activeStepNodeId?: string;
-  onSelectNode: (component: NodeComponent) => void;
+const LENS_PX = 220;
+
+// post-processing (~230 KB) streams in after the first frame is already on screen
+const Effects = React.lazy(() => import('../../engine/render/Effects').then((m) => ({ default: m.Effects })));
+
+const EMPTY: string[] = [];
+
+/** Keeps a bad spec from blanking the whole canvas; resets when the architecture changes. */
+class SceneBoundary extends React.Component<{ resetKey: string; onError: (msg: string) => void; children: React.ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch(err: Error) {
+    this.props.onError(err.message);
+  }
+  componentDidUpdate(prev: { resetKey: string }) {
+    if (prev.resetKey !== this.props.resetKey && this.state.failed) this.setState({ failed: false });
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
 }
 
-const CameraController: React.FC<{
-  targetLookAt?: [number, number, number];
-  defaultPos: [number, number, number];
-  defaultLookAt: [number, number, number];
-}> = ({ targetLookAt, defaultPos, defaultLookAt }) => {
-  const { camera } = useThree();
-  const controlsRef = useRef<any>(null);
-
+/** Hosts the WebGL canvas: lighting, backdrop, post-processing and the data-driven GraphScene. */
+export const CanvasContainer: React.FC<{ model: ArchitectureModel }> = ({ model }) => {
+  const stored = useAppStore((s) => s.collapsed[s.archId]);
+  // until the user expands/collapses something, use the spec's defaults (e.g. big imported models start collapsed)
+  const specDefault = useMemo(() => (model.spec.groups ?? []).filter((g) => g.collapsed).map((g) => g.id), [model.spec]);
+  const collapsed = stored ?? (specDefault.length ? specDefault : EMPTY);
+  const exploded = useAppStore((s) => s.view.exploded);
+  const select = useAppStore((s) => s.select);
+  const spread = exploded ? 1.8 : 1;
+  const { scene, error, pending } = useSceneModel(model, collapsed, spread);
+  // phones/tablets: skip ambient occlusion and cap pixel ratio — the biggest GPU costs
+  const [quality, setQuality] = useState<'high' | 'low'>(() => (isMobileNow() ? 'low' : 'high'));
+  const [renderError, setRenderError] = useState<string | null>(null);
   useEffect(() => {
-    const endPos = new THREE.Vector3(...defaultPos);
-    const endLookAt = targetLookAt ? new THREE.Vector3(...targetLookAt) : new THREE.Vector3(...defaultLookAt);
+    setRenderError(null);
+  }, [model.architecture.id]);
 
-    let startPos = camera.position.clone();
-    let startTime = performance.now();
-    const duration = 1000;
+  // a layout computed for the previous architecture must not be drawn against the new one
+  const current = scene && scene.spec === model.spec ? scene : null;
+  const showLoader = pending && !current;
 
-    const animateCamera = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const easeProgress = 0.5 - Math.cos(progress * Math.PI) / 2;
-
-      camera.position.lerpVectors(startPos, endPos, easeProgress);
-      if (controlsRef.current) {
-        controlsRef.current.target.lerp(endLookAt, easeProgress);
-        controlsRef.current.update();
-      }
-
-      if (progress < 1) {
-        requestAnimationFrame(animateCamera);
-      }
-    };
-
-    requestAnimationFrame(animateCamera);
-  }, [targetLookAt, defaultPos, defaultLookAt, camera]);
-
-  return (
-    <OrbitControls
-      ref={controlsRef}
-      enableDamping
-      dampingFactor={0.05}
-      rotateSpeed={0.8}
-      zoomSpeed={0.9}
-      minDistance={4}
-      maxDistance={40}
-    />
-  );
-};
-
-export const CanvasContainer: React.FC<CanvasContainerProps> = ({
-  viewMode,
-  activeBlockId,
-  weightVal,
-  biasVal,
-  inputXVal,
-  activationFunc,
-  architecture,
-  selectedNode,
-  hoveredNodeId,
-  isIsolated,
-  isWireframe,
-  isCrossSection,
-  isAutoRotate,
-  isExplodedView = false,
-  isPlayingAnimation,
-  trainingPhase,
-  isModalOpen = false,
-  isLoading = false,
-  activeStepNodeId,
-  onSelectNode,
-}) => {
-  const renderArchitectureModel = () => {
-    switch (architecture.id) {
-      case 'transformer':
-        return (
-          <Transformer3D
-            components={architecture.components}
-            selectedNodeId={selectedNode?.id}
-            hoveredNodeId={hoveredNodeId}
-            isIsolated={isIsolated}
-            isWireframe={isWireframe}
-            isCrossSection={isCrossSection}
-            isExplodedView={isExplodedView}
-            onSelectNode={onSelectNode}
-          />
-        );
-      case 'transformer-full':
-        return (
-          <FullTransformer3D
-            components={architecture.components}
-            selectedNodeId={selectedNode?.id}
-            hoveredNodeId={hoveredNodeId}
-            isIsolated={isIsolated}
-            isWireframe={isWireframe}
-            isCrossSection={isCrossSection}
-            isExplodedView={isExplodedView}
-            onSelectNode={onSelectNode}
-          />
-        );
-      case 'cnn':
-        return (
-          <CNN3D
-            components={architecture.components}
-            selectedNodeId={selectedNode?.id}
-            hoveredNodeId={hoveredNodeId}
-            isIsolated={isIsolated}
-            isWireframe={isWireframe}
-            isCrossSection={isCrossSection}
-            onSelectNode={onSelectNode}
-          />
-        );
-      case 'moe':
-        return (
-          <MoE3D
-            components={architecture.components}
-            selectedNodeId={selectedNode?.id}
-            hoveredNodeId={hoveredNodeId}
-            isIsolated={isIsolated}
-            isWireframe={isWireframe}
-            isCrossSection={isCrossSection}
-            onSelectNode={onSelectNode}
-          />
-        );
-      case 'mamba':
-        return (
-          <Mamba3D
-            components={architecture.components}
-            selectedNodeId={selectedNode?.id}
-            hoveredNodeId={hoveredNodeId}
-            isIsolated={isIsolated}
-            isWireframe={isWireframe}
-            isCrossSection={isCrossSection}
-            onSelectNode={onSelectNode}
-          />
-        );
-      case 'diffusion':
-        return (
-          <Diffusion3D
-            components={architecture.components}
-            selectedNodeId={selectedNode?.id}
-            hoveredNodeId={hoveredNodeId}
-            isIsolated={isIsolated}
-            isWireframe={isWireframe}
-            isCrossSection={isCrossSection}
-            onSelectNode={onSelectNode}
-          />
-        );
-      default:
-        return (
-          <Transformer3D
-            components={architecture.components}
-            selectedNodeId={selectedNode?.id}
-            hoveredNodeId={hoveredNodeId}
-            isIsolated={isIsolated}
-            isWireframe={isWireframe}
-            isCrossSection={isCrossSection}
-            isExplodedView={isExplodedView}
-            onSelectNode={onSelectNode}
-          />
-        );
+  // lens: pointer tracked in a ref (no React re-render per mouse move); the frame div is moved directly
+  const lens = useAppStore((s) => s.lens);
+  const lensPointer = useRef<LensPointer>({ x: 0, y: 0, inside: false });
+  const lensFrame = useRef<HTMLDivElement>(null);
+  const lensCanvas = useRef<HTMLCanvasElement>(null);
+  const trackLens = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!lens.on) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+    lensPointer.current = { x, y, inside: true };
+    if (lensFrame.current) {
+      lensFrame.current.style.transform = `translate(${x - LENS_PX / 2}px, ${y - LENS_PX / 2}px)`;
+      lensFrame.current.style.opacity = '1';
     }
   };
-
-  const renderAtomicBlock = () => {
-    switch (activeBlockId) {
-      case 'weight_bias':
-        return <WeightBias3DBlock weight={weightVal} bias={biasVal} inputX={inputXVal} />;
-      case 'activation':
-        return <Activation3DBlock inputVal={inputXVal} funcType={activationFunc} />;
-      case 'loss':
-        return <LossGradient3DBlock />;
-      case 'embedding':
-        return <Embedding3DBlock />;
-      default:
-        return <WeightBias3DBlock weight={weightVal} bias={biasVal} inputX={inputXVal} />;
-    }
+  const leaveLens = () => {
+    lensPointer.current.inside = false;
+    if (lensFrame.current) lensFrame.current.style.opacity = '0';
   };
 
   return (
-    <div className="w-full h-full relative overflow-hidden bg-radial from-white via-[#f7eee5]/60 to-[#e9ddd0]/80">
-      {/* 3D WebGL Canvas Component */}
+    <div className={`w-full h-full relative overflow-hidden ${lens.on ? 'cursor-crosshair' : ''}`} onPointerMove={trackLens} onPointerDown={trackLens} onPointerLeave={leaveLens}>
       <Canvas
-        camera={{
-          position: architecture.defaultCameraPosition,
-          fov: 45,
-          near: 0.1,
-          far: 100,
-        }}
-        shadows
-        gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
+        camera={{ position: [-6, 4, 22], fov: 40, near: 0.1, far: 200 }}
+        dpr={isMobileNow() ? [1, 1.5] : [1, 2]}
+        gl={{ antialias: false, powerPreference: 'high-performance', preserveDrawingBuffer: true }}
+        onPointerMissed={() => select(null)}
       >
-        <ambientLight intensity={0.8} />
-        <directionalLight position={[10, 15, 10]} intensity={1.2} castShadow />
-        <directionalLight position={[-10, -10, -10]} intensity={0.4} />
+        <color attach="background" args={[BACKGROUND]} />
+        <fog attach="fog" args={[BACKGROUND, 40, 110]} />
+        <PerformanceMonitor onDecline={() => setQuality('low')} onIncline={() => !isMobileNow() && setQuality('high')} flipflops={3} onFallback={() => setQuality('low')}>
+          <AdaptiveDpr pixelated={false} />
+        </PerformanceMonitor>
 
-        <CameraController
-          targetLookAt={selectedNode ? selectedNode.position : undefined}
-          defaultPos={viewMode === 'blocks' ? [0, 4, 14] : architecture.defaultCameraPosition}
-          defaultLookAt={viewMode === 'blocks' ? [0, 0, 0] : architecture.defaultCameraTarget}
+        <ambientLight intensity={0.55} />
+        <hemisphereLight args={['#fff8ef', '#d8c7b6', 0.6]} />
+        <directionalLight position={[8, 14, 10]} intensity={1.3} />
+        <directionalLight position={[-10, -4, -8]} intensity={0.35} />
+        {/* procedural studio lighting — no network fetch for HDRIs */}
+        <Environment resolution={128} frames={1}>
+          <Lightformer intensity={2.2} position={[0, 6, 6]} scale={[14, 6, 1]} color="#fffaf2" />
+          <Lightformer intensity={1.1} position={[-8, 0, 3]} rotation-y={Math.PI / 2} scale={[8, 8, 1]} color="#ffe9d6" />
+          <Lightformer intensity={0.8} position={[8, -2, 3]} rotation-y={-Math.PI / 2} scale={[8, 8, 1]} color="#e3efff" />
+        </Environment>
+
+        {/* specimen-board backdrop */}
+        <Grid
+          position={[0, 0, -3.2]}
+          rotation={[Math.PI / 2, 0, 0]}
+          args={[200, 200]}
+          cellSize={0.5}
+          cellThickness={0.6}
+          cellColor="#e6d9ca"
+          sectionSize={2.5}
+          sectionThickness={1}
+          sectionColor="#dcc9b6"
+          fadeDistance={70}
+          fadeStrength={1.5}
+          infiniteGrid
         />
 
-        {/* View Mode Routing */}
-        {viewMode === 'blocks' ? (
-          renderAtomicBlock()
-        ) : (
-          <>
-            {renderArchitectureModel()}
-            {!isModalOpen &&
-              architecture.components.map((comp, idx) => (
-                <HotspotPin
-                  key={comp.id}
-                  position={comp.position}
-                  component={comp}
-                  isSelected={selectedNode?.id === comp.id}
-                  isHovered={hoveredNodeId === comp.id}
-                  stepNumber={idx + 1}
-                  onSelect={onSelectNode}
-                  onHover={() => {}}
-                />
-              ))}
-            <SignalPulseStream
-              components={architecture.components}
-              activeStepNodeId={activeStepNodeId}
-              isPlaying={isPlayingAnimation}
-              trainingPhase={trainingPhase}
-            />
-          </>
-        )}
+        <Suspense fallback={null}>
+          <SceneBoundary resetKey={model.architecture.id} onError={setRenderError}>
+            {current && <GraphScene model={model} scene={current} spread={spread} />}
+          </SceneBoundary>
+        </Suspense>
+
+        <Suspense fallback={null}>
+          <Effects quality={quality} />
+        </Suspense>
+        {lens.on && <Lens pointer={lensPointer} zoom={lens.zoom} size={LENS_PX} output={lensCanvas} />}
       </Canvas>
 
-      {/* Floating Dismantled Layer Inner Working Card Overlay */}
-      {selectedNode && isExplodedView && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="absolute bottom-6 left-6 p-4 rounded-2xl bg-[rgba(255,251,244,0.9)] backdrop-blur-md border border-[rgba(117,91,70,0.18)] shadow-xl max-w-sm z-30 select-none font-sans"
+      {current && <MiniMap model={model} scene={current} />}
+      <ViewControls />
+      {lens.on && (
+        <div
+          ref={lensFrame}
+          className="pointer-events-none absolute left-0 top-0 z-[16] rounded-full border-[5px] border-[#2f2a27] shadow-[0_10px_30px_rgba(47,42,39,0.35)] opacity-0 transition-opacity"
+          style={{ width: LENS_PX, height: LENS_PX }}
         >
-          <div className="flex items-center gap-2 mb-1 text-[#eb7c6b] font-bold text-xs font-mono uppercase">
-            <Layers className="w-4 h-4" />
-            <span>DISMANTLED LAYER SPECIMEN</span>
-          </div>
-          <h4 className="font-serif font-bold text-base text-[#2f2a27]">
-            {selectedNode.name}
-          </h4>
-          <p className="text-xs text-[#8d847c] mt-1 font-sans">
-            {selectedNode.description}
-          </p>
-          <div className="mt-2.5 p-2 rounded-xl bg-[#fff2c9] text-[#534a43] text-[10px] font-mono border border-[#f0e2b0]">
-            TENSOR: {selectedNode.outputTensor.expression}
-          </div>
-        </motion.div>
+          <canvas ref={lensCanvas} className="absolute inset-0 w-full h-full rounded-full" />
+          <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-[#2f2a27] text-[#f5b3a8] text-[10px] font-mono font-bold">{lens.zoom.toFixed(lens.zoom % 1 ? 1 : 0)}×</span>
+          <span className="absolute left-1/2 top-1/2 w-3 h-px -translate-x-1/2 bg-[#eb7c6b]/70" />
+          <span className="absolute left-1/2 top-1/2 h-3 w-px -translate-y-1/2 bg-[#eb7c6b]/70" />
+        </div>
       )}
 
-      {/* Interactive 3D Neural Specimen Transition Loading Overlay */}
       <AnimatePresence>
-        {isLoading && (
+        {showLoader && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -308,19 +161,27 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({
                 <div className="absolute inset-0 rounded-full border-4 border-[#eb7c6b]/20 border-t-[#eb7c6b] animate-spin" />
                 <Boxes className="w-6 h-6 text-[#2f2a27] animate-pulse" />
               </div>
-
               <div>
-                <h3 className="font-serif font-medium text-lg text-[#2f2a27]">
-                  Decoding 3D Specimen…
-                </h3>
-                <p className="text-xs font-sans text-[#8d847c] mt-0.5">
-                  Synthesizing tensor nodes & camera matrices
-                </p>
+                <h3 className="font-serif font-medium text-lg text-[#2f2a27]">Decoding 3D Specimen…</h3>
+                <p className="text-xs font-sans text-[#8d847c] mt-0.5">Inferring tensor shapes & laying out the graph</p>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {(error || renderError || model.infer.errors.length > 0) && (
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 max-w-lg p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-mono flex gap-2">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          <div>
+            {error && <div>Layout failed: {error}</div>}
+            {renderError && <div>Render failed: {renderError}</div>}
+            {model.infer.errors.map((e) => (
+              <div key={e}>{e}</div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

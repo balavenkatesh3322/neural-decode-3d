@@ -1,195 +1,178 @@
-import React from 'react';
-import { Architecture } from '../../types/architecture';
-import { Layers, Sparkles, Heart, FileText, ExternalLink, Flame } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Search, X, CheckCircle2, Plus, Upload, Trash2, GraduationCap } from 'lucide-react';
+import type { Architecture, SystemCategory } from '../../types/architecture';
+import { listArchitectures, resolveArchitecture } from '../../engine/registry';
+import { useAppStore } from '../../store/useAppStore';
 
-interface LeftSidebarProps {
-  architectures: Architecture[];
-  activeArchitecture?: Architecture;
-  selectedArchId?: string;
-  onSelectArchitecture: (arch: Architecture) => void;
-}
+const CATEGORY_LABEL: Record<SystemCategory | 'all', string> = {
+  all: 'All',
+  llm: 'Language',
+  vision: 'Vision',
+  generative: 'Generative',
+  ssm: 'Sequence',
+  multimodal: 'Multimodal',
+  classic: 'Classic',
+  custom: 'Yours',
+};
 
-export const LeftSidebar: React.FC<LeftSidebarProps> = ({
-  architectures,
-  activeArchitecture,
-  selectedArchId,
-  onSelectArchitecture,
-}) => {
-  const currentArchId = selectedArchId || activeArchitecture?.id;
+/** Learning progress ring: share of lesson stops visited; full + check when the tour is done. */
+const ProgressRing: React.FC<{ value: number; done: boolean; quiz?: number }> = ({ value, done, quiz }) => {
+  const r = 8;
+  const c = 2 * Math.PI * r;
+  return (
+    <div className="relative w-6 h-6 flex items-center justify-center" title={`${Math.round(value * 100)}% explored${done ? ' · tour completed' : ''}${quiz !== undefined ? ` · best quiz ${Math.round(quiz * 100)}%` : ''}`}>
+      {done ? (
+        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+      ) : (
+        <svg viewBox="0 0 20 20" className="w-5 h-5 -rotate-90">
+          <circle cx="10" cy="10" r={r} fill="none" stroke="rgba(117,91,70,0.15)" strokeWidth="2.5" />
+          {value > 0 && <circle cx="10" cy="10" r={r} fill="none" stroke="#eb7c6b" strokeWidth="2.5" strokeDasharray={`${c * value} ${c}`} strokeLinecap="round" />}
+        </svg>
+      )}
+    </div>
+  );
+};
 
-  // High-Resolution Crisp Technology Thumbnail Image Dataset
-  const fallbackThumbnails: Record<string, string> = {
-    transformer: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=400&auto=format&fit=crop',
-    cnn: 'https://images.unsplash.com/photo-1507413245164-6160d8298b31?q=80&w=400&auto=format&fit=crop',
-    moe: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400&auto=format&fit=crop',
-    mamba: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=400&auto=format&fit=crop',
-    diffusion: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=400&auto=format&fit=crop',
+/** Architecture library: search, category filters, learning progress, user models. */
+export const LeftSidebar: React.FC<{ variant?: 'panel' | 'sheet'; onPicked?: () => void }> = ({ variant = 'panel', onPicked }) => {
+  const archId = useAppStore((s) => s.archId);
+  const setArch = useAppStore((s) => s.setArch);
+  const search = useAppStore((s) => s.search);
+  const setSearch = useAppStore((s) => s.setSearch);
+  const category = useAppStore((s) => s.category);
+  const setCategory = useAppStore((s) => s.setCategory);
+  const progress = useAppStore((s) => s.progress);
+  const custom = useAppStore((s) => s.custom);
+  const removeCustom = useAppStore((s) => s.removeCustom);
+  const openModal = useAppStore((s) => s.openModal);
+
+  const all = useMemo(() => listArchitectures(custom), [custom]);
+  const categories = useMemo(() => ['all', ...new Set(all.map((a) => a.category))] as (SystemCategory | 'all')[], [all]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return all.filter((a) => {
+      if (category !== 'all' && a.category !== category) return false;
+      if (!q) return true;
+      return [a.name, a.subtitle, a.badge, a.description, ...a.components.map((c) => c.name)].some((t) => t?.toLowerCase().includes(q));
+    });
+  }, [all, search, category]);
+
+  const pick = (a: Architecture) => {
+    setArch(a.id);
+    onPicked?.();
   };
 
-  // Trending Upcoming Research Papers Dataset
-  const upcomingPapers = [
-    {
-      id: 'deepseek-v3',
-      name: 'DeepSeek-V3',
-      subtitle: 'Multi-head Latent Attention & MoE',
-      paperTitle: 'DeepSeek-V3 Technical Report',
-      paperUrl: 'https://arxiv.org/abs/2412.19437',
-      thumbnail: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=200&auto=format&fit=crop',
-    },
-    {
-      id: 'kimi-k1-5',
-      name: 'Kimi k1.5',
-      subtitle: 'Multimodal LLM Long-Context RL',
-      paperTitle: 'Kimi k1.5: Multimodal LLM',
-      paperUrl: 'https://arxiv.org/',
-      thumbnail: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=200&auto=format&fit=crop',
-    },
-    {
-      id: 'qwen-2-5-coder',
-      name: 'Qwen 2.5-Coder',
-      subtitle: 'Code Reasoning & Agentic Execution',
-      paperTitle: 'Qwen2.5-Coder Report',
-      paperUrl: 'https://arxiv.org/abs/2409.12186',
-      thumbnail: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=200&auto=format&fit=crop',
-    },
-    {
-      id: 'llama-3-3',
-      name: 'Llama 3.3 70B',
-      subtitle: 'Open Weights Multilingual Model',
-      paperTitle: 'Llama 3 Herd of Models',
-      paperUrl: 'https://arxiv.org/abs/2407.21783',
-      thumbnail: 'https://images.unsplash.com/photo-1507413245164-6160d8298b31?q=80&w=200&auto=format&fit=crop',
-    },
-    {
-      id: 'flux-1',
-      name: 'FLUX.1 Schneller',
-      subtitle: 'Flow Matching Image Generation',
-      paperTitle: 'FLUX.1 Technical Overview',
-      paperUrl: 'https://arxiv.org/abs/2408.00000',
-      thumbnail: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=200&auto=format&fit=crop',
-    },
-    {
-      id: 'sora-2',
-      name: 'Sora 2.0 Video Engine',
-      subtitle: 'Spatiotemporal Video Diffusion',
-      paperTitle: 'Video Models World Simulators',
-      paperUrl: 'https://openai.com/research/video-generation-models-as-world-simulators',
-      thumbnail: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=200&auto=format&fit=crop',
-    },
-  ];
+  const explored = (a: Architecture) => {
+    const visited = new Set(progress.visited[a.id] ?? []);
+    if (!a.components.length || !visited.size) return 0;
+    const { spec } = resolveArchitecture(a.id, custom);
+    const carriers = [...spec.nodes, ...(spec.groups ?? [])];
+    const seen = a.components.filter((c) => carriers.some((n) => (n.content === c.id || n.id === c.id) && visited.has(n.id))).length;
+    return seen / a.components.length;
+  };
+
+  const shell =
+    variant === 'panel'
+      ? 'w-[285px] flex-shrink-0 h-full bg-[rgba(255,251,244,0.82)] backdrop-blur-md border border-[rgba(117,91,70,0.18)] rounded-[26px] shadow-[0_18px_48px_rgba(87,62,43,0.06)] p-4'
+      : 'w-full h-full p-1';
 
   return (
-    <aside className="w-[285px] flex-shrink-0 h-full bg-[rgba(255,251,244,0.82)] backdrop-blur-md border border-[rgba(117,91,70,0.18)] rounded-[26px] shadow-[0_18px_48px_rgba(87,62,43,0.06)] p-4 flex flex-col z-20 overflow-hidden transition-all duration-300 select-none font-sans">
-      {/* Panel Heading */}
-      <div className="h-[33px] flex items-center justify-between px-1 pb-2.5 flex-shrink-0 border-b border-[rgba(117,91,70,0.12)]">
-        <span className="uppercase tracking-[0.13em] text-[10px] font-semibold text-[#8d847c]">
-          EXPLORE ARCHITECTURES
-        </span>
+    <aside className={`${shell} flex flex-col z-20 overflow-hidden select-none font-sans`}>
+      <div className="flex items-center justify-between px-1 pb-2 flex-shrink-0">
+        <span className="uppercase tracking-[0.13em] text-[10px] font-semibold text-[#8d847c]">Architecture library</span>
         <span className="text-[10px] font-mono font-bold text-[#eb7c6b]">
-          {architectures.length} Active
+          {filtered.length}/{all.length}
         </span>
       </div>
 
-      {/* Organ List Container */}
-      <div className="flex-1 overflow-y-auto pt-2 space-y-3 custom-scrollbar">
-        {/* Active Interactive 3D Models Section */}
-        <div className="space-y-1">
-          {architectures.map((arch) => {
-            const isSelected = arch.id === currentArchId;
-            const imgSrc = arch.thumbnail || fallbackThumbnails[arch.id] || fallbackThumbnails.transformer;
+      {/* search */}
+      <label className="relative flex-shrink-0">
+        <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d847c]" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search models or layers (e.g. attention)"
+          className="w-full pl-8 pr-8 py-2 rounded-xl bg-white/80 border border-[rgba(117,91,70,0.18)] text-xs text-[#2f2a27] placeholder:text-[#a69c92] outline-none focus:border-[#eb7c6b] focus:ring-2 focus:ring-[#eb7c6b]/15"
+        />
+        {search && (
+          <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[#8d847c] hover:text-[#2f2a27]" aria-label="Clear search">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </label>
 
-            return (
+      {/* category chips */}
+      <div className="flex flex-wrap gap-1 pt-2 pb-2 flex-shrink-0 border-b border-[rgba(117,91,70,0.12)]">
+        {categories.map((c) => (
+          <button
+            key={c}
+            onClick={() => setCategory(c)}
+            className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-colors ${
+              category === c ? 'bg-[#eb7c6b] border-[#eb7c6b] text-white' : 'bg-white/60 border-[rgba(117,91,70,0.16)] text-[#8d847c] hover:text-[#2f2a27]'
+            }`}
+          >
+            {CATEGORY_LABEL[c]}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex-1 overflow-y-auto pt-2 space-y-1 custom-scrollbar">
+        {filtered.length === 0 && (
+          <div className="text-xs text-[#8d847c] text-center py-6">
+            No models match “{search}”.{' '}
+            <button className="underline text-[#eb7c6b]" onClick={() => (setSearch(''), setCategory('all'))}>
+              Clear filters
+            </button>
+          </div>
+        )}
+        {filtered.map((arch) => {
+          const isSelected = arch.id === archId;
+          const isCustom = !!custom[arch.id];
+          return (
+            <div key={arch.id} className="relative group">
               <button
-                key={arch.id}
-                onClick={() => onSelectArchitecture(arch)}
-                className={`w-full min-h-[70px] grid grid-cols-[54px_1fr_18px] items-center gap-2 text-left p-2 rounded-[15px] border transition-all duration-300 cursor-pointer relative group ${
+                onClick={() => pick(arch)}
+                className={`w-full min-h-[62px] grid grid-cols-[44px_1fr_24px] items-center gap-2 text-left p-2 rounded-[15px] border transition-all ${
                   isSelected
                     ? 'bg-[rgba(253,234,226,0.72)] border-[#eb7c6b]/50 shadow-[0_8px_20px_rgba(195,91,70,0.07)]'
                     : 'bg-transparent border-transparent hover:bg-white/50 hover:border-[rgba(117,91,70,0.12)]'
                 }`}
               >
-                {/* Circular Thumbnail Glyph (Crisp contrast with zero transparency wash-out) */}
-                <div className="w-[47px] h-[47px] rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 bg-white border border-[rgba(121,86,67,0.15)] shadow-sm p-0.5">
-                  <img
-                    src={imgSrc}
-                    alt={arch.name}
-                    className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-300"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = fallbackThumbnails.transformer;
-                    }}
-                  />
-                </div>
-
-                {/* Title & Category Info */}
-                <div className="min-w-0 pr-1">
-                  <b className="block font-serif font-medium text-[17px] leading-[1.1] text-[#2f2a27] truncate group-hover:text-[#eb7c6b] transition-colors">
-                    {arch.name}
-                  </b>
-                  <small className="block mt-1 text-[10px] text-[#8d847c] font-sans truncate">
-                    {arch.badge} • {arch.subtitle.split('&')[0]}
-                  </small>
-                </div>
-
-                {/* Favorite Heart Icon */}
-                <div className="flex justify-end">
-                  <Heart
-                    className={`w-4 h-4 transition-colors ${
-                      isSelected ? 'fill-[#ef8d7d] text-[#ef8d7d]' : 'text-stone-300 group-hover:text-[#ef8d7d]'
-                    }`}
-                  />
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Dedicated Trending Research Papers Showcase Section */}
-        <div className="pt-3 border-t border-[rgba(117,91,70,0.14)] space-y-2">
-          <div className="flex items-center justify-between px-1">
-            <span className="uppercase tracking-[0.13em] text-[10px] font-semibold text-[#8d847c] flex items-center gap-1">
-              <Flame className="w-3.5 h-3.5 text-[#eb7c6b]" />
-              TRENDING PAPERS
-            </span>
-            <span className="text-[9px] font-mono font-bold text-[#8d6bcc] bg-[#8d6bcc]/10 px-1.5 py-0.5 rounded border border-[#8d6bcc]/20">
-              COMING SOON
-            </span>
-          </div>
-
-          <div className="space-y-1.5">
-            {upcomingPapers.map((paper) => (
-              <a
-                key={paper.id}
-                href={paper.paperUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full grid grid-cols-[38px_1fr_auto] items-center gap-2.5 p-2 rounded-[14px] bg-white/40 border border-[rgba(117,91,70,0.1)] hover:bg-white/80 hover:border-[#eb7c6b]/30 transition-all text-left group"
-                title={`Paper: ${paper.paperTitle}`}
-              >
-                <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 bg-white border border-[rgba(117,91,70,0.12)] p-0.5">
-                  <img
-                    src={paper.thumbnail}
-                    alt={paper.name}
-                    className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-300"
-                  />
-                </div>
-
+                <img src={arch.thumbnail} alt="" width={42} height={42} className="w-[42px] h-[42px] rounded-full border border-[rgba(121,86,67,0.15)] bg-white" />
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-serif font-medium text-xs text-[#2f2a27] truncate group-hover:text-[#eb7c6b]">
-                      {paper.name}
-                    </span>
-                  </div>
-                  <span className="text-[9px] text-[#8d847c] font-sans truncate block">
-                    {paper.subtitle}
-                  </span>
+                  <b className="block font-serif font-medium text-[16px] leading-[1.1] text-[#2f2a27] truncate group-hover:text-[#eb7c6b] transition-colors">{arch.name}</b>
+                  <small className="block mt-0.5 text-[10px] text-[#8d847c] truncate">{arch.badge}</small>
                 </div>
+                <ProgressRing value={explored(arch)} done={progress.toursCompleted.includes(arch.id)} quiz={progress.quizBest[arch.id]} />
+              </button>
+              {isCustom && (
+                <button
+                  onClick={() => removeCustom(arch.id)}
+                  className="absolute right-9 top-1/2 -translate-y-1/2 p-1 rounded-lg text-[#8d847c] opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-rose-600 hover:bg-rose-50"
+                  title="Delete this saved model"
+                  aria-label={`Delete ${arch.name}`}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
-                <span className="text-[8px] font-mono font-bold text-[#8d847c] bg-[#f3eee5] px-1.5 py-0.5 rounded border border-[rgba(117,91,70,0.14)] uppercase flex-shrink-0">
-                  SOON
-                </span>
-              </a>
-            ))}
-          </div>
+      <div className="flex-shrink-0 pt-2 mt-1 border-t border-[rgba(117,91,70,0.12)] space-y-1.5">
+        <div className="grid grid-cols-2 gap-1.5">
+          <button onClick={() => openModal('editor')} className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#2f2a27] text-white text-[11px] font-semibold hover:bg-black">
+            <Plus className="w-3.5 h-3.5" /> Build a model
+          </button>
+          <button onClick={() => openModal('import')} className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-white border border-[rgba(117,91,70,0.2)] text-[#2f2a27] text-[11px] font-semibold hover:border-[#eb7c6b]">
+            <Upload className="w-3.5 h-3.5" /> Import ONNX
+          </button>
+        </div>
+        <div className="flex items-center gap-1.5 text-[10px] text-[#8d847c] px-1">
+          <GraduationCap className="w-3.5 h-3.5 text-[#8d6bcc]" />
+          {progress.toursCompleted.length} tours completed · {Object.keys(progress.quizBest).length} quizzes taken
         </div>
       </div>
     </aside>

@@ -116,7 +116,7 @@ export const TextGenerationSimulator: React.FC = () => {
       </div>
 
       {/* Layer Step Progression Pipeline Indicator */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {steps.map((step) => {
           const isActive = step.id === currentStep;
           const isPassed = step.id < currentStep;

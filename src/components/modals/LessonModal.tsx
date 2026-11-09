@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Architecture } from '../../types/architecture';
 import { BookOpen, X, ChevronLeft, ChevronRight, CheckCircle2, Calculator, Sparkles } from 'lucide-react';
+import { Formula } from '../common/Formula';
 
 interface LessonModalProps {
   architecture: Architecture;
@@ -99,8 +100,8 @@ export const LessonModal: React.FC<LessonModalProps> = ({
                   </span>
                   <span>{activeNode.name}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-stone-900 text-amber-300 font-mono text-sm border border-stone-800">
-                  <code>{activeNode.mathFormula}</code>
+                <div className="p-3 rounded-xl bg-stone-900 text-amber-200 text-sm border border-stone-800">
+                  <Formula tex={activeNode.mathFormula} />
                 </div>
                 <p className="text-xs text-stone-600 italic font-serif">
                   "{activeNode.explanation}"

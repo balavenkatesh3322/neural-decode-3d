@@ -1,4 +1,4 @@
-export type SystemCategory = 'llm' | 'vision' | 'ssm' | 'generative';
+export type SystemCategory = 'llm' | 'vision' | 'ssm' | 'generative' | 'classic' | 'multimodal' | 'custom';
 
 export interface TensorShape {
   name: string;

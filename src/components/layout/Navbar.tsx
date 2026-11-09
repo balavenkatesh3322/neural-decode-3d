@@ -1,224 +1,108 @@
 import React, { useState } from 'react';
-import { SystemCategory } from '../../types/architecture';
-import {
-  Boxes,
-  Layers,
-  Globe,
-  Github,
-  Menu,
-  X,
-  UserCheck,
-  ChevronDown,
-  Compass,
-  BrainCircuit,
-  BookOpen,
-  BarChart2,
-  Sliders,
-  Share2,
-} from 'lucide-react';
+import { Github, Menu, X, Compass, BrainCircuit, BookOpen, BarChart2, Sliders, Share2, HelpCircle, Wrench, Globe, Brain } from 'lucide-react';
+import { useAppStore, ModalId } from '../../store/useAppStore';
 
-interface NavbarProps {
-  activeCategory: SystemCategory | 'all';
-  searchQuery: string;
-  onSelectCategory: (cat: SystemCategory | 'all') => void;
-  onSearchChange: (query: string) => void;
-  onOpenBuildingBlocks: () => void;
-  onOpenLesson: () => void;
-  onOpenQuiz: () => void;
-  onOpenCompare: () => void;
-  onOpenPlayground: () => void;
-  onOpenShare?: () => void;
-}
+const TABS: { id: ModalId | 'explore'; label: string; icon: React.ReactNode; title: string }[] = [
+  { id: 'explore', label: 'Explore', icon: <Compass className="w-4 h-4" />, title: 'Back to the 3D model' },
+  { id: 'blocks', label: 'Basics', icon: <BrainCircuit className="w-4 h-4" />, title: 'Deep learning basics, end to end: 33 concepts with sandboxes' },
+  { id: 'study', label: 'Study', icon: <Brain className="w-4 h-4" />, title: 'Real-world story, cheat sheet and flashcards for this architecture' },
+  { id: 'lesson', label: 'Lessons', icon: <BookOpen className="w-4 h-4" />, title: 'Step-by-step lesson for this architecture' },
+  { id: 'quiz', label: 'Quiz', icon: <HelpCircle className="w-4 h-4" />, title: 'Test yourself on this architecture' },
+  { id: 'compare', label: 'Compare', icon: <BarChart2 className="w-4 h-4" />, title: 'Compare two architectures side by side' },
+  { id: 'pipeline', label: 'Playground', icon: <Sliders className="w-4 h-4" />, title: 'Type a prompt and follow it through a real model' },
+  { id: 'editor', label: 'Build', icon: <Wrench className="w-4 h-4" />, title: 'Build or edit your own architecture' },
+];
 
-export const Navbar: React.FC<NavbarProps> = ({
-  onOpenBuildingBlocks,
-  onOpenLesson,
-  onOpenCompare,
-  onOpenPlayground,
-  onOpenShare,
-}) => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'explore' | 'components' | 'lessons' | 'compare' | 'playground'>('explore');
+const REPO = 'https://github.com/balavenkatesh3322/neural-decode-3d';
+const PROFILE = 'https://balavenkatesh3322.github.io/bala_venkatesh_profile/';
+
+/** Top bar. The active tab is derived from which panel is open, so it never goes stale. */
+export const Navbar: React.FC = () => {
+  const modals = useAppStore((s) => s.modals);
+  const openModal = useAppStore((s) => s.openModal);
+  const closeModal = useAppStore((s) => s.closeModal);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const activeTab = (TABS.find((t) => t.id !== 'explore' && modals[t.id as ModalId])?.id ?? 'explore') as string;
+
+  const go = (id: ModalId | 'explore') => {
+    // one panel at a time; "Explore" simply closes them
+    (Object.keys(modals) as ModalId[]).forEach((m) => modals[m] && closeModal(m));
+    if (id !== 'explore') openModal(id);
+    setMenuOpen(false);
+  };
 
   return (
-    <header className="h-[68px] max-w-[1720px] w-full mx-auto px-4 md:px-6 flex items-center justify-between z-30 select-none relative flex-nowrap whitespace-nowrap">
-      {/* 1. Left Section: Brand Logo & Tagline */}
-      <div className="flex items-center gap-3 flex-shrink-0">
-        <div className="flex items-baseline gap-3 cursor-pointer">
-          <strong className="font-serif font-medium text-2xl md:text-3xl text-[#2f2a27] tracking-tight leading-none whitespace-nowrap">
-            NeuralDecode<sup className="text-[#eb7c6b] font-sans text-xs font-normal pl-0.5">✦</sup>
-          </strong>
-          <em className="text-xs font-cursive italic text-[#8d6bcc] hidden sm:inline-block whitespace-nowrap">
-            Learn AI like an artist
-          </em>
-        </div>
-      </div>
+    <header className="h-[56px] lg:h-[68px] max-w-[1720px] w-full mx-auto px-3 md:px-6 flex items-center justify-between gap-3 z-40 select-none relative flex-shrink-0">
+      <button onClick={() => go('explore')} className="flex items-baseline gap-3 flex-shrink-0" title="NeuralDecode 3D home">
+        <strong className="font-serif font-medium text-[22px] lg:text-3xl text-[#2f2a27] tracking-tight leading-none whitespace-nowrap">
+          NeuralDecode<sup className="text-[#eb7c6b] font-sans text-xs font-normal pl-0.5">✦</sup>
+        </strong>
+        <em className="text-xs font-cursive italic text-[#8d6bcc] hidden 2xl:inline-block whitespace-nowrap">Learn AI like an artist</em>
+      </button>
 
-      {/* 2. Center Section: Exact Anatomy Atelier Main Navigation Buttons (.main-nav) */}
-      <nav className="hidden lg:flex items-center justify-center gap-1.5 px-2 py-1 rounded-full bg-[#f3eee5] border border-[rgba(117,91,70,0.18)] shadow-inner">
-        <button
-          onClick={() => setActiveTab('explore')}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
-            activeTab === 'explore'
-              ? 'bg-[#eb7c6b]/10 text-[#eb7c6b] border border-[#eb7c6b]/30 font-semibold shadow-sm'
-              : 'text-[#8d847c] hover:text-[#2f2a27] hover:bg-white/40'
-          }`}
-        >
-          <Compass className="w-4 h-4" />
-          <span>Explore</span>
-        </button>
-
-        {/* Core Components Tab */}
-        <button
-          onClick={() => {
-            setActiveTab('components');
-            onOpenBuildingBlocks();
-          }}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
-            activeTab === 'components'
-              ? 'bg-[#eb7c6b]/10 text-[#eb7c6b] border border-[#eb7c6b]/30 font-semibold shadow-sm'
-              : 'text-[#8d847c] hover:text-[#2f2a27] hover:bg-white/40'
-          }`}
-        >
-          <BrainCircuit className="w-4 h-4" />
-          <span>Core Components</span>
-        </button>
-
-        <button
-          onClick={() => {
-            setActiveTab('lessons');
-            onOpenLesson();
-          }}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
-            activeTab === 'lessons'
-              ? 'bg-[#eb7c6b]/10 text-[#eb7c6b] border border-[#eb7c6b]/30 font-semibold shadow-sm'
-              : 'text-[#8d847c] hover:text-[#2f2a27] hover:bg-white/40'
-          }`}
-        >
-          <BookOpen className="w-4 h-4" />
-          <span>Lessons</span>
-        </button>
-
-        <button
-          onClick={() => {
-            setActiveTab('compare');
-            onOpenCompare();
-          }}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
-            activeTab === 'compare'
-              ? 'bg-[#eb7c6b]/10 text-[#eb7c6b] border border-[#eb7c6b]/30 font-semibold shadow-sm'
-              : 'text-[#8d847c] hover:text-[#2f2a27] hover:bg-white/40'
-          }`}
-        >
-          <BarChart2 className="w-4 h-4" />
-          <span>Compare</span>
-        </button>
-
-        <button
-          onClick={() => {
-            setActiveTab('playground');
-            onOpenPlayground();
-          }}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
-            activeTab === 'playground'
-              ? 'bg-[#eb7c6b]/10 text-[#eb7c6b] border border-[#eb7c6b]/30 font-semibold shadow-sm'
-              : 'text-[#8d847c] hover:text-[#2f2a27] hover:bg-white/40'
-          }`}
-        >
-          <Sliders className="w-4 h-4" />
-          <span>Playground</span>
-        </button>
+      <nav className="hidden lg:flex items-center gap-1 px-1.5 py-1 rounded-full bg-[#f3eee5] border border-[rgba(117,91,70,0.18)] shadow-inner" aria-label="Main">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => go(t.id)}
+            title={t.title}
+            aria-current={activeTab === t.id ? 'page' : undefined}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap border ${
+              activeTab === t.id ? 'bg-[#eb7c6b]/10 text-[#eb7c6b] border-[#eb7c6b]/30 font-semibold shadow-sm' : 'text-[#8d847c] hover:text-[#2f2a27] hover:bg-white/40 border-transparent'
+            }`}
+          >
+            {t.icon}
+            <span className="hidden xl:inline">{t.label}</span>
+            <span className="xl:hidden">{t.label.split(' ')[0]}</span>
+          </button>
+        ))}
       </nav>
 
-      {/* 3. Right Section: Share Button, GitHub Repository Link & Creator Profile Avatar Image */}
-      <div className="hidden md:flex items-center gap-2.5 flex-shrink-0">
-        {/* Share Button */}
-        {onOpenShare && (
-          <button
-            onClick={onOpenShare}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#eb7c6b] text-white font-sans font-bold text-xs shadow-sm hover:bg-[#e87868] transition-all whitespace-nowrap flex-shrink-0"
-            title="Share NeuralDecode 3D Link"
-          >
-            <Share2 className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>Share</span>
-          </button>
-        )}
-
-        {/* GitHub Repository Link */}
-        <a
-          href="https://github.com/balavenkatesh3322/neural-decode-3d"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/80 border border-[rgba(117,91,70,0.18)] hover:border-[#2f2a27] text-[#2f2a27] font-sans text-xs shadow-sm hover:shadow transition-all group whitespace-nowrap flex-shrink-0"
-          title="GitHub Repository: balavenkatesh3322/neural-decode-3d"
-        >
-          <Github className="w-4 h-4 text-[#2f2a27] group-hover:scale-110 transition-transform flex-shrink-0" />
-          <span className="font-semibold">Repository</span>
-        </a>
-
-        {/* Profile Avatar Image (Replaces BV text badge with Bala Venkatesh portrait photo) */}
-        <a
-          href="https://balavenkatesh3322.github.io/bala_venkatesh_profile/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 cursor-pointer group flex-shrink-0"
-          title="Creator Portfolio: Bala Venkatesh"
-        >
-          <img
-            src="/bv_avatar.jpg"
-            alt="Bala Venkatesh"
-            className="w-[38px] h-[38px] rounded-full object-cover border-2 border-[#eb7c6b] ring-4 ring-[#f7eee5] shadow-md group-hover:scale-105 transition-transform flex-shrink-0"
-          />
-          <ChevronDown className="w-3.5 h-3.5 text-[#8d847c] flex-shrink-0" />
-        </a>
-      </div>
-
-      {/* Responsive Mobile Menu Toggle Button (< 768px) */}
-      <div className="flex md:hidden items-center gap-2 flex-shrink-0">
-        {onOpenShare && (
-          <button
-            onClick={onOpenShare}
-            className="p-1.5 rounded-full bg-[#eb7c6b] text-white"
-          >
-            <Share2 className="w-4 h-4" />
-          </button>
-        )}
-
+      <div className="flex items-center gap-2 flex-shrink-0">
         <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 rounded-xl bg-[#2f2a27] text-[#eb7c6b]"
+          onClick={() => go('share')}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-[#eb7c6b] text-white font-bold text-xs shadow-sm hover:bg-[#e06a58]"
+          title="Share a link to exactly what you are looking at"
         >
-          {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          <Share2 className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Share</span>
+        </button>
+        <a
+          href={REPO}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/80 border border-[rgba(117,91,70,0.18)] hover:border-[#2f2a27] text-[#2f2a27] text-xs font-semibold"
+          title="Source code on GitHub"
+        >
+          <Github className="w-4 h-4" />
+          <span className="hidden 2xl:inline">Repository</span>
+        </a>
+        <a href={PROFILE} target="_blank" rel="noopener noreferrer" className="hidden md:block flex-shrink-0" title="Creator: Bala Venkatesh">
+          <img src="/bv_avatar.webp" alt="Bala Venkatesh" width={36} height={36} className="w-9 h-9 rounded-full object-cover border-2 border-[#eb7c6b] ring-4 ring-[#f7eee5] hover:scale-105 transition-transform" />
+        </a>
+        <button onClick={() => setMenuOpen(!menuOpen)} className="lg:hidden p-2 rounded-xl bg-[#2f2a27] text-[#eb7c6b]" aria-label="Menu" aria-expanded={menuOpen}>
+          {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
 
-      {/* Mobile Drawer Menu Overlay */}
-      {isMobileMenuOpen && (
-        <div className="absolute top-16 left-0 right-0 bg-[#fffbf4] border-b border-[rgba(117,91,70,0.18)] p-4 space-y-3 shadow-2xl md:hidden z-50 animate-modal-content">
-          <a
-            href="https://github.com/balavenkatesh3322/neural-decode-3d"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between p-3 rounded-xl bg-[#2f2a27] text-white font-medium text-xs"
-          >
-            <div className="flex items-center gap-2">
-              <Github className="w-4 h-4 text-[#eb7c6b]" />
-              <span>GitHub Repository (balavenkatesh3322)</span>
-            </div>
-            <Globe className="w-4 h-4 text-[#eb7c6b]" />
+      {menuOpen && (
+        <div className="lg:hidden absolute top-full left-2 right-2 mt-1 p-2 rounded-2xl bg-[#fffbf4] border border-[rgba(117,91,70,0.18)] shadow-2xl z-50 grid grid-cols-2 gap-1.5">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => go(t.id)}
+              className={`flex items-center gap-2 p-3 rounded-xl text-sm font-medium text-left ${activeTab === t.id ? 'bg-[#eb7c6b]/10 text-[#eb7c6b]' : 'bg-white text-[#2f2a27]'}`}
+            >
+              {t.icon}
+              {t.label}
+            </button>
+          ))}
+          <a href={REPO} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 rounded-xl bg-[#2f2a27] text-white text-sm">
+            <Github className="w-4 h-4 text-[#eb7c6b]" /> GitHub
           </a>
-
-          <a
-            href="https://balavenkatesh3322.github.io/bala_venkatesh_profile/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between p-3 rounded-xl bg-white border border-[rgba(117,91,70,0.18)] text-[#2f2a27] font-medium text-xs"
-          >
-            <div className="flex items-center gap-2">
-              <img src="/bv_avatar.jpg" alt="BV" className="w-6 h-6 rounded-full object-cover border border-[#eb7c6b]" />
-              <span>Created by Bala Venkatesh</span>
-            </div>
-            <Globe className="w-4 h-4 text-[#eb7c6b]" />
+          <a href={PROFILE} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 rounded-xl bg-white text-[#2f2a27] text-sm">
+            <Globe className="w-4 h-4 text-[#eb7c6b]" /> Bala Venkatesh
           </a>
         </div>
       )}

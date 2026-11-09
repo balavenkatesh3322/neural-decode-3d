@@ -42,6 +42,22 @@ Created with ❤️ by **[Bala Venkatesh](https://balavenkatesh3322.github.io/ba
 
 ---
 
+## 🧩 How the 3D engine works
+
+Every architecture is **data, not a hand-built scene**. A graph spec in `src/specs/*.graph.ts` lists the ops, the connections between them and the config (`d_model`, `n_heads`, …). The engine then:
+
+1. **Infers every tensor shape and parameter count** (`src/engine/graph/infer.ts`). The op library in `src/engine/ops` covers linear, attention, conv, norm, router, SSM scan, U-Net blocks and more. Llama-3-8B comes out at about 8.03B params and ResNet-50 at exactly 25,557,032.
+2. **Lays the graph out automatically** with elkjs (`src/engine/layout`), including nested, collapsible blocks such as "Decoder Block ×32".
+3. **Renders each op type with a consistent 3D visual** (`src/engine/render`): weight grids, causal attention heatmaps, feature-map slabs, a router diamond, a scan conveyor. Animated packets travel along the real edges, forward or as backprop.
+
+### Adding a new architecture
+1. Write `src/specs/<name>.graph.ts` following the `GraphSpec` type in `src/engine/spec/schema.ts`.
+2. Register it in `src/specs/index.ts` and add its lesson content in `src/data/architectures/`.
+3. Link nodes to lessons with `content: '<component id>'`.
+4. Run `npm test`. The tests validate every spec, check that data flows upward and that nodes don't overlap, and verify the parameter counts.
+
+---
+
 ## 🛠️ Technology Stack
 
 | Category | Technology |
@@ -82,7 +98,12 @@ Created with ❤️ by **[Bala Venkatesh](https://balavenkatesh3322.github.io/ba
    ```
    Open `http://localhost:5173` in your web browser.
 
-4. **Build for Production**:
+4. **Run the tests**:
+   ```bash
+   npm test
+   ```
+
+5. **Build for Production**:
    ```bash
    npm run build
    ```

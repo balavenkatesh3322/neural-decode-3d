@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import confetti from 'canvas-confetti';
 import { Architecture, NodeComponent } from '../../types/architecture';
 import {
   Play,
@@ -23,6 +22,8 @@ import {
   ExternalLink,
   Bookmark,
 } from 'lucide-react';
+import { STORIES } from '../../data/stories';
+import { useAppStore } from '../../store/useAppStore';
 
 interface RightSidebarProps {
   architecture: Architecture;
@@ -31,6 +32,7 @@ interface RightSidebarProps {
   isPlayingAnimation: boolean;
   onTogglePlayAnimation: () => void;
   onSelectNode: (component: NodeComponent) => void;
+  variant?: 'panel' | 'sheet';
 }
 
 export const RightSidebar: React.FC<RightSidebarProps> = ({
@@ -40,6 +42,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   isPlayingAnimation,
   onTogglePlayAnimation,
   onSelectNode,
+  variant = 'panel',
 }) => {
   // Live Training Simulator State
   const [isTrainingRunning, setIsTrainingRunning] = useState<boolean>(false);
@@ -87,22 +90,10 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   const steps = architecture.dataFlowSteps;
   const activeStep = steps.find((s) => s.stepIndex === currentStepIndex) || steps[0];
   const activeNode = selectedNode || architecture.components.find((c) => c.id === activeStep?.activeNodeId) || architecture.components[0];
-  const isFinalStep = currentStepIndex === steps.length;
 
-  // Trigger canvas confetti celebration on final step reach!
-  useEffect(() => {
-    if (isFinalStep && (isPlayingAnimation || isTrainingRunning)) {
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#eb7c6b', '#10B981', '#3B82F6', '#EC4899'],
-      });
-    }
-  }, [isFinalStep, isPlayingAnimation, isTrainingRunning]);
 
   return (
-    <aside className="w-[330px] flex-shrink-0 bg-[rgba(255,251,244,0.82)] backdrop-blur-md border border-[rgba(117,91,70,0.18)] rounded-[26px] shadow-[0_18px_48px_rgba(87,62,43,0.06)] h-full flex flex-col z-20 overflow-hidden transition-all duration-300 select-none font-sans">
+    <aside className={`${variant === 'panel' ? 'w-full bg-[rgba(255,251,244,0.82)] backdrop-blur-md border border-[rgba(117,91,70,0.18)] rounded-[26px] shadow-[0_18px_48px_rgba(87,62,43,0.06)]' : 'w-full rounded-2xl'} h-full flex flex-col z-20 overflow-hidden select-none font-sans`}>
       {/* 1. Organ Header & Artwork Stamp */}
       <div className="p-4 border-b border-[rgba(117,91,70,0.14)] bg-white/40 space-y-3 flex-shrink-0">
         <div className="flex items-start justify-between gap-3">
@@ -223,6 +214,29 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Real-world story: what it solves, what goes in, what comes out */}
+        {STORIES[architecture.id] && (
+          <div className="p-3.5 rounded-[18px] bg-white/80 border border-[rgba(117,91,70,0.14)] space-y-2 text-xs">
+            <span className="uppercase tracking-[0.13em] text-[10px] font-semibold text-[#8d847c] block">Solves real problems</span>
+            <ul className="space-y-1">
+              {STORIES[architecture.id].problems.map((p) => (
+                <li key={p.title} className="text-[#2f2a27]">
+                  <b>{p.title}</b> <span className="text-[#8d847c]">— {p.example}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 pt-1 border-t border-[rgba(117,91,70,0.1)]">
+              <span className="font-mono text-[9px] font-bold text-[#8d847c] pt-0.5">IN</span>
+              <span className="font-serif italic text-[#2f2a27]">{STORIES[architecture.id].input.value}</span>
+              <span className="font-mono text-[9px] font-bold text-emerald-700 pt-0.5">OUT</span>
+              <span className="font-semibold text-emerald-800">{STORIES[architecture.id].output.value}</span>
+            </div>
+            <button onClick={() => useAppStore.getState().openModal('study')} className="w-full py-1.5 rounded-xl bg-[#2f2a27] text-white text-[11px] font-semibold">
+              Study & remember →
+            </button>
+          </div>
+        )}
 
         {/* Yellow Tip Sticky Note */}
         <div className="p-3.5 rounded-[18px] bg-[#fff2c9] text-[#534a43] space-y-1 shadow-[0_7px_13px_rgba(93,69,43,0.11)] border border-[#f0e2b0]">
