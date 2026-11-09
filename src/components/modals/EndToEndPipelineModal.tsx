@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TextGenerationSimulator } from '../simulators/TextGenerationSimulator';
 import { ImageGenerationSimulator } from '../simulators/ImageGenerationSimulator';
+import { RealModelLab } from '../../features/realmodel/RealModelLab';
 import {
   X,
   Sparkles,
@@ -16,7 +17,7 @@ import {
 } from 'lucide-react';
 
 export const EndToEndPipelineModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const [pipelineMode, setPipelineMode] = useState<'text' | 'image' | 'translation'>('translation');
+  const [pipelineMode, setPipelineMode] = useState<'real' | 'text' | 'image' | 'translation'>('real');
   const [translationStep, setTranslationStep] = useState<number>(0);
 
   const translationSteps = [
@@ -48,7 +49,7 @@ export const EndToEndPipelineModal: React.FC<{ onClose: () => void }> = ({ onClo
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 select-none font-sans">
+      <div className="fixed inset-0 z-50 flex items-center justify-center sm:p-4 md:p-6 select-none font-sans">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -64,10 +65,10 @@ export const EndToEndPipelineModal: React.FC<{ onClose: () => void }> = ({ onClo
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.93, y: 16 }}
           transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-          className="relative bg-[#fffbf4] border border-[rgba(117,91,70,0.18)] rounded-[28px] max-w-5xl w-full h-[88vh] shadow-[0_24px_60px_rgba(87,62,43,0.15)] overflow-hidden flex flex-col z-10"
+          className="relative bg-[#fffbf4] border border-[rgba(117,91,70,0.18)] sm:rounded-[28px] max-w-5xl w-full h-[100dvh] sm:h-[88vh] shadow-[0_24px_60px_rgba(87,62,43,0.15)] overflow-hidden flex flex-col z-10"
         >
           {/* Top Header */}
-          <div className="p-5 border-b border-[rgba(117,91,70,0.14)] flex items-center justify-between bg-white/60">
+          <div className="p-3 sm:p-5 border-b border-[rgba(117,91,70,0.14)] flex flex-wrap items-center justify-between gap-2 bg-white/60">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-[#eb7c6b] text-white flex items-center justify-center shadow-md">
                 <Wand2 className="w-5 h-5" />
@@ -84,7 +85,16 @@ export const EndToEndPipelineModal: React.FC<{ onClose: () => void }> = ({ onClo
 
             {/* Mode Switcher Tabs */}
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 p-1 rounded-full bg-[#f3eee5] border border-[rgba(117,91,70,0.18)]">
+              <div className="flex items-center gap-1 p-1 rounded-full bg-[#f3eee5] border border-[rgba(117,91,70,0.18)] overflow-x-auto max-w-full">
+                <button
+                  onClick={() => setPipelineMode('real')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
+                    pipelineMode === 'real' ? 'bg-[#eb7c6b] text-white font-bold shadow-sm' : 'text-[#8d847c] hover:text-[#2f2a27]'
+                  }`}
+                >
+                  <Cpu className="w-3.5 h-3.5" />
+                  <span>Real GPT-2</span>
+                </button>
                 <button
                   onClick={() => setPipelineMode('translation')}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
@@ -136,7 +146,7 @@ export const EndToEndPipelineModal: React.FC<{ onClose: () => void }> = ({ onClo
             {pipelineMode === 'translation' ? (
               <div className="space-y-6 font-sans">
                 {/* Real-World Machine Translation Input & Output Cards */}
-                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 p-5 rounded-2xl bg-white border border-[rgba(117,91,70,0.14)] shadow-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-center gap-4 p-3 sm:p-5 rounded-2xl bg-white border border-[rgba(117,91,70,0.14)] shadow-sm">
                   {/* Source English */}
                   <div className="p-4 rounded-xl bg-[#f7f0e7] border border-[rgba(117,91,70,0.14)] space-y-1">
                     <span className="text-[9px] font-mono font-bold text-[#8d847c] uppercase block">
@@ -161,7 +171,7 @@ export const EndToEndPipelineModal: React.FC<{ onClose: () => void }> = ({ onClo
                 </div>
 
                 {/* Machine Translation Progress Steps */}
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {translationSteps.map((step) => {
                     const isActive = step.id === translationStep;
                     const isPassed = step.id < translationStep;
@@ -229,6 +239,8 @@ export const EndToEndPipelineModal: React.FC<{ onClose: () => void }> = ({ onClo
                   </motion.div>
                 </AnimatePresence>
               </div>
+            ) : pipelineMode === 'real' ? (
+              <RealModelLab onShowIn3D={onClose} />
             ) : pipelineMode === 'text' ? (
               <TextGenerationSimulator />
             ) : (

@@ -2,13 +2,18 @@ import React, { useState } from 'react';
 import { Architecture } from '../../types/architecture';
 import { HelpCircle, X, CheckCircle2, XCircle, Trophy, RotateCcw, ArrowRight } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { playSfx } from '../../features/audio/audio';
 
 interface QuizModalProps {
   architecture: Architecture;
   onClose: () => void;
+  /** Called with the final score fraction (0–1) when the quiz is finished. */
+  onComplete?: (score: number) => void;
+  /** Fly the 3D camera to the part a question is about. */
+  onShowInModel?: (componentId: string) => void;
 }
 
-export const QuizModal: React.FC<QuizModalProps> = ({ architecture, onClose }) => {
+export const QuizModal: React.FC<QuizModalProps> = ({ architecture, onClose, onComplete, onShowInModel }) => {
   const questions = architecture.quizQuestions;
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -25,6 +30,9 @@ export const QuizModal: React.FC<QuizModalProps> = ({ architecture, onClose }) =
 
     if (idx === q.correctOptionIndex) {
       setScore((prev) => prev + 1);
+      playSfx('correct');
+    } else {
+      playSfx('wrong');
     }
   };
 
@@ -35,6 +43,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({ architecture, onClose }) =
       setIsAnswered(false);
     } else {
       setIsCompleted(true);
+      onComplete?.(score / questions.length);
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
     }
   };
@@ -131,6 +140,14 @@ export const QuizModal: React.FC<QuizModalProps> = ({ architecture, onClose }) =
                     EXPLANATION
                   </span>
                   <p className="font-sans leading-relaxed">{q.explanation}</p>
+                  {q.targetNodeId && onShowInModel && (
+                    <button
+                      onClick={() => onShowInModel(q.targetNodeId!)}
+                      className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-900 text-amber-300 text-xs font-semibold hover:bg-black"
+                    >
+                      Show me this part in 3D →
+                    </button>
+                  )}
                 </div>
               )}
             </>

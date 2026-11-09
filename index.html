@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>NeuralDecode 3D — Learn AI Architecture Like an Artist</title>
     
     <!-- SEO & Primary Meta Tags -->
     <meta name="title" content="NeuralDecode 3D — Learn AI Architecture Like an Artist" />
-    <meta name="description" content="Interactive 3D WebGL Web Engine for AI Neural Networks. Explore Transformer, MoE, CNN, Mamba, Diffusion, and Full Encoder-Decoder architectures layer-by-layer." />
+    <meta name="description" content="Interactive 3D WebGL Web Engine for AI Neural Networks. Explore 18 architectures — GPT-2, BERT, ViT, CLIP, Whisper, DeepSeek-V3, ResNet, U-Net, Mamba, Diffusion and more — or import your own ONNX model." />
     <meta name="keywords" content="AI, Neural Network 3D, WebGL, Transformer, Deep Learning, Machine Learning, Visualization, Bala Venkatesh" />
     <meta name="author" content="Bala Venkatesh" />
 
@@ -29,7 +29,10 @@
     <!-- Google Fonts: Cormorant Garamond (Serif), DM Sans (Sans), JetBrains Mono (Mono) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- fonts load without blocking first paint (system fallbacks show meanwhile) -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;700&display=swap"></noscript>
+    <meta name="theme-color" content="#FBF9F5" />
   </head>
   <body class="bg-[#FBF9F5] text-stone-900 overflow-hidden font-sans antialiased">
     <div id="root"></div>

@@ -86,7 +86,7 @@ export const ImageGenerationSimulator: React.FC = () => {
       </div>
 
       {/* Denoising Stage Steps Bar */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {denoisingSteps.map((step) => {
           const isActive = step.id === currentStep;
           const isPassed = step.id < currentStep;
@@ -124,7 +124,7 @@ export const ImageGenerationSimulator: React.FC = () => {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.96 }}
           transition={{ duration: 0.3 }}
-          className="grid grid-cols-[300px_1fr] gap-6 p-6 rounded-[24px] bg-white border border-[rgba(117,91,70,0.18)] shadow-md"
+          className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-4 md:gap-6 p-3 sm:p-6 rounded-[24px] bg-white border border-[rgba(117,91,70,0.18)] shadow-md"
         >
           {/* Latent Visualizer Frame */}
           <div className="relative w-full h-[260px] rounded-2xl overflow-hidden border border-[rgba(117,91,70,0.18)] bg-[#2f2a27] flex items-center justify-center shadow-inner">

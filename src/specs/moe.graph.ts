@@ -1,0 +1,50 @@
+import type { GraphSpec } from '../engine/spec/schema';
+
+/** One Mixture-of-Experts FFN layer (DeepSeek-style: routed experts + a shared expert). */
+export const moeGraph: GraphSpec = {
+  config: {
+    B: 1,
+    T: 16,
+    d_model: 7168,
+    n_experts: 4,
+    top_k: 2,
+    d_expert: 2048,
+  },
+  controls: [
+    { key: 'T', label: 'Tokens in batch', min: 2, max: 64, step: 2 },
+    { key: 'd_model', label: 'Hidden size d_model', min: 1024, max: 8192, step: 1024 },
+    { key: 'd_expert', label: 'Expert hidden size', min: 512, max: 8192, step: 512 },
+    { key: 'top_k', label: 'Experts per token (k)', min: 1, max: 4, step: 1 },
+  ],
+  nodes: [
+    { id: 'x', op: 'input', label: 'Post-attention hidden state', params: { shape: ['B', 'T', 'd_model'] }, content: 'moe-input-repr' },
+    { id: 'router', op: 'router', label: 'Router (Top-k)', params: { experts: 'n_experts', topK: 'top_k', active: ['e1', 'e2'] }, content: 'moe-router-gate' },
+    { id: 'e1', op: 'expert', label: 'Expert 1 · Math & Code', params: { hidden: 'd_expert', tokens: 4 }, content: 'moe-expert-1' },
+    { id: 'e2', op: 'expert', label: 'Expert 2 · Language', params: { hidden: 'd_expert', tokens: 6 }, content: 'moe-expert-2' },
+    { id: 'e3', op: 'expert', label: 'Expert 3 · Reasoning', params: { hidden: 'd_expert', tokens: 0 }, content: 'moe-expert-3' },
+    { id: 'e4', op: 'expert', label: 'Expert 4 · Facts', params: { hidden: 'd_expert', tokens: 0 }, content: 'moe-expert-4' },
+    { id: 'shared', op: 'expert', label: 'Shared Expert (always on)', params: { hidden: 'd_expert' }, content: 'moe-shared-expert' },
+    { id: 'combine', op: 'moe_combine', label: 'Weighted Combine', content: 'moe-aggregator' },
+    { id: 'add', op: 'add', label: 'Residual +' },
+  ],
+  edges: [
+    { from: 'x', to: 'router' },
+    { from: 'x', to: 'e1' },
+    { from: 'x', to: 'e2' },
+    { from: 'x', to: 'e3' },
+    { from: 'x', to: 'e4' },
+    { from: 'x', to: 'shared' },
+    { from: 'router', to: 'e1', kind: 'control', label: 'dispatch' },
+    { from: 'router', to: 'e2', kind: 'control', label: 'dispatch' },
+    { from: 'router', to: 'e3', kind: 'control' },
+    { from: 'router', to: 'e4', kind: 'control' },
+    { from: 'shared', to: 'combine' },
+    { from: 'e1', to: 'combine' },
+    { from: 'e2', to: 'combine' },
+    { from: 'e3', to: 'combine' },
+    { from: 'e4', to: 'combine' },
+    { from: 'router', to: 'combine', kind: 'control', label: 'gate weights' },
+    { from: 'combine', to: 'add' },
+    { from: 'x', to: 'add', kind: 'residual' },
+  ],
+};
