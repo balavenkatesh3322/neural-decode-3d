@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Github, Menu, X, Compass, BrainCircuit, BookOpen, BarChart2, Sliders, Share2, HelpCircle, Wrench, Globe, Brain } from 'lucide-react';
+import { MessageCircle, Menu, X, Compass, BrainCircuit, BookOpen, BarChart2, Sliders, Share2, HelpCircle, Wrench, Globe, Brain } from 'lucide-react';
 import { useAppStore, ModalId } from '../../store/useAppStore';
+import { PROFILE_URL, whatsappUrl } from '../../config/contact';
 
 const TABS: { id: ModalId | 'explore'; label: string; icon: React.ReactNode; title: string }[] = [
   { id: 'explore', label: 'Explore', icon: <Compass className="w-4 h-4" />, title: 'Back to the 3D model' },
@@ -13,8 +14,6 @@ const TABS: { id: ModalId | 'explore'; label: string; icon: React.ReactNode; tit
   { id: 'editor', label: 'Build', icon: <Wrench className="w-4 h-4" />, title: 'Build or edit your own architecture' },
 ];
 
-const REPO = 'https://github.com/balavenkatesh3322/neural-decode-3d';
-const PROFILE = 'https://balavenkatesh3322.github.io/bala_venkatesh_profile/';
 
 /** Top bar. The active tab is derived from which panel is open, so it never goes stale. */
 export const Navbar: React.FC = () => {
@@ -69,17 +68,24 @@ export const Navbar: React.FC = () => {
           <span className="hidden sm:inline">Share</span>
         </button>
         <a
-          href={REPO}
+          href={whatsappUrl()}
           target="_blank"
           rel="noopener noreferrer"
-          className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/80 border border-[rgba(117,91,70,0.18)] hover:border-[#2f2a27] text-[#2f2a27] text-xs font-semibold"
-          title="Source code on GitHub"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-[#25D366] hover:bg-[#1ebe5b] text-white text-xs font-bold shadow-sm"
+          title="Chat with Bala on WhatsApp (+91 90038 12808) to learn more"
         >
-          <Github className="w-4 h-4" />
-          <span className="hidden 2xl:inline">Repository</span>
+          <MessageCircle className="w-4 h-4" />
+          <span className="hidden sm:inline">Learn with Bala</span>
         </a>
-        <a href={PROFILE} target="_blank" rel="noopener noreferrer" className="hidden md:block flex-shrink-0" title="Creator: Bala Venkatesh">
-          <img src="/bv_avatar.webp" alt="Bala Venkatesh" width={36} height={36} className="w-9 h-9 rounded-full object-cover border-2 border-[#eb7c6b] ring-4 ring-[#f7eee5] hover:scale-105 transition-transform" />
+        <a
+          href={PROFILE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hidden md:flex items-center gap-2 pl-1 pr-3 py-1 rounded-full bg-white/80 border border-[rgba(117,91,70,0.18)] hover:border-[#eb7c6b] flex-shrink-0 group"
+          title="Bala Venkatesh — creator profile"
+        >
+          <img src="/bv_avatar.webp" alt="" width={32} height={32} className="w-8 h-8 rounded-full object-cover border-2 border-[#eb7c6b] group-hover:scale-105 transition-transform" />
+          <span className="hidden xl:inline text-xs font-semibold text-[#2f2a27]">Bala Venkatesh</span>
         </a>
         <button onClick={() => setMenuOpen(!menuOpen)} className="lg:hidden p-2 rounded-xl bg-[#2f2a27] text-[#eb7c6b]" aria-label="Menu" aria-expanded={menuOpen}>
           {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -98,10 +104,10 @@ export const Navbar: React.FC = () => {
               {t.label}
             </button>
           ))}
-          <a href={REPO} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 rounded-xl bg-[#2f2a27] text-white text-sm">
-            <Github className="w-4 h-4 text-[#eb7c6b]" /> GitHub
+          <a href={whatsappUrl()} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 rounded-xl bg-[#25D366] text-white text-sm font-semibold">
+            <MessageCircle className="w-4 h-4" /> WhatsApp Bala
           </a>
-          <a href={PROFILE} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 rounded-xl bg-white text-[#2f2a27] text-sm">
+          <a href={PROFILE_URL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 rounded-xl bg-white text-[#2f2a27] text-sm">
             <Globe className="w-4 h-4 text-[#eb7c6b]" /> Bala Venkatesh
           </a>
         </div>

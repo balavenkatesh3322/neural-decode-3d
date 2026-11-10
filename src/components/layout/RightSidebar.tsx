@@ -17,12 +17,13 @@ import {
   Trophy,
   Sparkles,
   Globe,
-  Github,
+  MessageCircle,
   FileText,
   ExternalLink,
   Bookmark,
 } from 'lucide-react';
 import { STORIES } from '../../data/stories';
+import { PROFILE_URL, whatsappUrl } from '../../config/contact';
 import { useAppStore } from '../../store/useAppStore';
 
 interface RightSidebarProps {
@@ -312,41 +313,24 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
         </div>
       </div>
 
-      {/* 3. Footer Creator & GitHub Links */}
-      <div className="p-3 bg-[#2f2a27] text-white border-t border-stone-800 space-y-2 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#c46854] to-[#efb59c] text-white font-bold text-[10px] flex items-center justify-center font-sans">
-              BV
-            </div>
-            <span className="font-serif font-medium text-xs text-[#eb7c6b]">
-              Bala Venkatesh
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <a
-              href="https://github.com/balavenkatesh3322/neural-decode-3d"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[10px] font-mono text-stone-300 hover:text-white flex items-center gap-1 bg-stone-800 px-2 py-1 rounded-md border border-stone-700 hover:border-[#eb7c6b] transition-all"
-              title="GitHub Repository"
-            >
-              <Github className="w-3 h-3 text-[#eb7c6b]" />
-              <span>GitHub</span>
-            </a>
-
-            <a
-              href="https://balavenkatesh3322.github.io/bala_venkatesh_profile/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[10px] font-mono text-[#eb7c6b] hover:text-white flex items-center gap-1 bg-stone-800 px-2 py-1 rounded-md border border-stone-700 hover:border-[#eb7c6b] transition-all"
-              title="Portfolio Website"
-            >
-              <span>Portfolio</span>
-              <Globe className="w-3 h-3" />
-            </a>
-          </div>
+      {/* 3. Footer: creator profile & WhatsApp contact */}
+      <div className="p-3 bg-[#2f2a27] text-white border-t border-stone-800 flex-shrink-0">
+        <div className="flex items-center justify-between gap-2">
+          <a href={PROFILE_URL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 min-w-0 group" title="Bala Venkatesh — creator profile">
+            <img src="/bv_avatar.webp" alt="" width={24} height={24} className="w-6 h-6 rounded-full object-cover border border-[#eb7c6b]" />
+            <span className="font-serif font-medium text-xs text-[#eb7c6b] group-hover:text-white truncate">Bala Venkatesh</span>
+            <Globe className="w-3 h-3 text-stone-400 group-hover:text-white flex-shrink-0" />
+          </a>
+          <a
+            href={whatsappUrl(architecture.name)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] font-semibold text-white flex items-center gap-1 bg-[#25D366] hover:bg-[#1ebe5b] px-2.5 py-1 rounded-md transition-colors flex-shrink-0"
+            title="Ask Bala on WhatsApp (+91 90038 12808)"
+          >
+            <MessageCircle className="w-3 h-3" />
+            <span>Ask on WhatsApp</span>
+          </a>
         </div>
       </div>
     </aside>
