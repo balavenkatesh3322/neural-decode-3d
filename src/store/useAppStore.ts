@@ -53,7 +53,7 @@ interface AppState {
   custom: Record<string, GraphSpec>;
   /** Real tokens from the in-browser tokenizer, shown on the embedding layer of that architecture. */
   liveTokens: { archId: string; tokens: string[] } | null;
-  audio: { sound: boolean; music: boolean };
+  audio: { sound: boolean };
   /** Desktop side panels can be hidden to give the 3D view the whole screen. */
   panels: { left: boolean; right: boolean };
   /** Magnifier that follows the pointer. */
@@ -68,7 +68,7 @@ interface AppState {
   zoomCamera: (kind: 'in' | 'out' | 'fit') => void;
   togglePanel: (side: 'left' | 'right' | 'both') => void;
 
-  toggleAudio: (key: 'sound' | 'music') => void;
+  toggleAudio: (key: 'sound') => void;
 
   setLiveTokens: (archId: string, tokens: string[]) => void;
   addCustom: (id: string, spec: GraphSpec) => void;
@@ -120,7 +120,7 @@ export const useAppStore = create<AppState>()(
       progress: { visited: {}, quizBest: {}, toursCompleted: [] },
       custom: {},
       liveTokens: null,
-      audio: { sound: true, music: true },
+      audio: { sound: true },
 
       panels: { left: true, right: true },
       lens: { on: false, zoom: 3 },
@@ -228,11 +228,11 @@ export const useAppStore = create<AppState>()(
     {
       name: 'neuraldecode-3d',
       version: 3,
-      // v2: sound + music default to on
       migrate: (persisted: any, version) => {
         if (!persisted) return persisted;
         const p = { ...persisted };
-        if (version < 2) p.audio = { sound: true, music: true }; // v2: sound + music on by default
+        if (version < 2) p.audio = { sound: true }; // v2: sound effects on by default
+        if (p.audio) p.audio = { sound: p.audio.sound ?? true }; // music was removed
         if (version < 3) p.view = { ...(p.view ?? {}), autoRotate: true }; // v3: auto-rotate on by default
         return p;
       },

@@ -1,5 +1,5 @@
 import React from 'react';
-import { RotateCcw, Globe, BarChart2, Layers, Ruler, Volume2, VolumeX, Music, Maximize, Minimize } from 'lucide-react';
+import { RotateCcw, Globe, BarChart2, Layers, Ruler, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react';
 import { useAppStore, ViewOptions } from '../../store/useAppStore';
 
 const RibbonButton: React.FC<{ active?: boolean; title: string; onClick: () => void; children: React.ReactNode }> = ({ active, title, onClick, children }) => (
@@ -68,9 +68,6 @@ export const ToolRibbon: React.FC = () => {
       <div className="w-px h-6 self-center lg:w-auto lg:h-px lg:self-auto bg-[rgba(117,91,70,0.15)] mx-0.5 lg:mx-1 flex-shrink-0" />
       <RibbonButton active={audio.sound} title={audio.sound ? 'Sound effects on' : 'Sound effects off'} onClick={() => toggleAudio('sound')}>
         {audio.sound ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-      </RibbonButton>
-      <RibbonButton active={audio.music} title={audio.music ? 'Architecture theme music on' : 'Play this architecture’s theme music'} onClick={() => toggleAudio('music')}>
-        <Music className={`w-5 h-5 ${audio.music ? 'animate-pulse' : ''}`} />
       </RibbonButton>
       <RibbonButton title="Compare architectures" onClick={() => openModal('compare')}>
         <BarChart2 className="w-5 h-5" />

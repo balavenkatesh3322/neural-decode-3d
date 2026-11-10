@@ -2,12 +2,11 @@ import { useEffect, useRef } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import type { ArchitectureModel } from '../../engine/useArchitectureModel';
 import { getOp } from '../../engine/ops';
-import { music, playSfx, setSfxEnabled, themeFor } from './audio';
+import { playSfx, setSfxEnabled } from './audio';
 
-/** Turns app events into sound: selection, tour steps, flow mode, architecture theme. */
+/** Turns app events into sound effects: selection, tour steps, flow mode. */
 export function useAudioBridge(model: ArchitectureModel) {
   const sound = useAppStore((s) => s.audio.sound);
-  const musicOn = useAppStore((s) => s.audio.music);
   const selectedId = useAppStore((s) => s.selectedId);
   const step = useAppStore((s) => s.tour.step);
   const playing = useAppStore((s) => s.tour.playing);
@@ -17,12 +16,6 @@ export function useAudioBridge(model: ArchitectureModel) {
   useEffect(() => {
     setSfxEnabled(sound);
   }, [sound]);
-  useEffect(() => {
-    music.setEnabled(musicOn);
-  }, [musicOn]);
-  useEffect(() => {
-    music.setTheme(themeFor(model.architecture.id, model.architecture.category));
-  }, [model.architecture.id, model.architecture.category]);
 
   useEffect(() => {
     if (first.current || !selectedId) return;
