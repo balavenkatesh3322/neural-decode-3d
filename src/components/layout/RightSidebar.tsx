@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Architecture, NodeComponent } from '../../types/architecture';
 import {
@@ -21,7 +21,15 @@ import {
   FileText,
   ExternalLink,
   Bookmark,
+  Bot,
+  MessagesSquare,
+  ChevronDown,
 } from 'lucide-react';
+import { ARCH_TO_AD, adLink } from '../../config/agentdecode';
+import { track } from '../../lib/track';
+
+// the OpenAI SDK loads only when the tutor is opened
+const TutorTab = lazy(() => import('../../features/ai/TutorTab').then((m) => ({ default: m.TutorTab })));
 import { STORIES } from '../../data/stories';
 import { PROFILE_URL, whatsappUrl } from '../../config/contact';
 import { useAppStore } from '../../store/useAppStore';
@@ -88,6 +96,8 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
     setAccuracy(12.4);
   };
 
+  const [tutorOpen, setTutorOpen] = useState(false);
+  const ad = ARCH_TO_AD[architecture.id];
   const steps = architecture.dataFlowSteps;
   const activeStep = steps.find((s) => s.stepIndex === currentStepIndex) || steps[0];
   const activeNode = selectedNode || architecture.components.find((c) => c.id === activeStep?.activeNodeId) || architecture.components[0];
@@ -237,6 +247,40 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
               Study & remember →
             </button>
           </div>
+        )}
+
+        {/* AI tutor (visitor's own OpenAI key) */}
+        <div className="rounded-[18px] bg-white/70 border border-[rgba(117,91,70,0.14)]">
+          <button onClick={() => setTutorOpen(!tutorOpen)} className="w-full flex items-center gap-2 p-3 text-left" aria-expanded={tutorOpen}>
+            <MessagesSquare className="w-4 h-4 text-[#3FA7C9]" />
+            <span className="flex-1 text-xs font-semibold text-[#2f2a27]">Ask the AI tutor about {architecture.name}</span>
+            <ChevronDown className={`w-4 h-4 text-[#8d847c] transition-transform ${tutorOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {tutorOpen && (
+            <div className="px-3 pb-3">
+              <Suspense fallback={<div className="text-[11px] text-[#8d847c]">Loading tutor…</div>}>
+                <TutorTab architecture={architecture} />
+              </Suspense>
+            </div>
+          )}
+        </div>
+
+        {/* sister course: how apps and agents use this model */}
+        {ad && (
+          <a
+            href={adLink(ad.topic)}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => track('agentdecode_clicked', { from: 'architecture', arch: architecture.id, topic: ad.topic })}
+            className="flex items-start gap-2.5 p-3 rounded-[18px] bg-gradient-to-br from-[#f6f1fb] to-[#eef7fa] border border-[#8d6bcc]/25 hover:border-[#8d6bcc]/60 transition-colors"
+          >
+            <Bot className="w-5 h-5 text-[#8d6bcc] flex-shrink-0 mt-0.5" />
+            <span className="min-w-0">
+              <span className="block text-[9px] font-mono font-bold uppercase tracking-wider text-[#8d6bcc]">See it in action · AgentDecode 3D ↗</span>
+              <span className="block font-serif text-[15px] text-[#2f2a27] leading-tight">{ad.name}</span>
+              <span className="block text-[11px] text-[#534a43] mt-0.5">{ad.why}</span>
+            </span>
+          </a>
         )}
 
         {/* Yellow Tip Sticky Note */}

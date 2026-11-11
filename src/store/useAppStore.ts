@@ -2,9 +2,10 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { SystemCategory } from '../types/architecture';
 import type { GraphSpec } from '../engine/spec/schema';
+import { bumpStreak, XP } from '../features/xp/levels';
 
 export type FlowMode = 'off' | 'forward' | 'backward';
-export type ModalId = 'lesson' | 'quiz' | 'compare' | 'blocks' | 'detail' | 'pipeline' | 'share' | 'editor' | 'import' | 'study';
+export type ModalId = 'blocks' | 'detail' | 'share' | 'import' | 'study' | 'path' | 'progress';
 
 export interface ViewOptions {
   autoRotate: boolean;
@@ -31,9 +32,69 @@ interface Progress {
   basicsDone?: string[];
   /** Flashcards marked “got it”, per architecture. */
   flashKnown?: Record<string, string[]>;
+  xp?: number;
+  streak?: { count: number; last: string };
+  /** Date of the last completed daily challenge. */
+  dailyDone?: string;
+  predicted?: { right: number; total: number };
+}
+
+/** Answers from the “find my path” onboarding. */
+export interface Onboarding {
+  seenHome: boolean;
+  level?: 'new' | 'user' | 'builder';
+  goal?: string;
+  minutes?: number;
+  /** Recommended architecture ids, in order. */
+  path?: string[];
+  startBasics?: boolean;
+}
+
+export interface Prefs {
+  /** Hide side panels, minimap and toolbar while the tour plays. */
+  focusOnTour: boolean;
+  /** Auto-play the tour the first time an architecture is opened. */
+  autoplay: boolean;
+  /** “How to read this scene” tip dismissed. */
+  tipDismissed: boolean;
+  /** Pause before tour steps and ask “what happens next?”. */
+  predict?: boolean;
+  /** Name printed on certificates. */
+  name?: string;
+  /** OpenAI API key for the tutor (kept in this browser only). */
+  apiKey?: string;
+  /** ChatGPT model for the tutor. */
+  aiModel?: string;
+}
+
+/** A “what happens next?” question paused before a tour step. */
+export interface PredictState {
+  /** The step (1-based) that will play after answering. */
+  step: number;
+  question: string;
+  options: string[];
+  answer: number;
 }
 
 interface AppState {
+  /** Landing hero shown over the app. */
+  home: boolean;
+  onboarding: Onboarding;
+  prefs: Prefs;
+  setHome: (on: boolean) => void;
+  setOnboarding: (patch: Partial<Onboarding>) => void;
+  setPrefs: (patch: Partial<Prefs>) => void;
+  /** Last XP award, for the toast. */
+  xpToast: { amount: number; reason: string; n: number } | null;
+  award: (amount: number, reason: string) => void;
+  predict: PredictState | null;
+  setPredict: (p: PredictState | null) => void;
+  answerPredict: (correct: boolean) => void;
+  /** Break-it mode: the component switched off in the current architecture. */
+  broken: string | null;
+  failure: { step: number; text: string } | null;
+  setBroken: (componentId: string | null) => void;
+  setFailure: (f: { step: number; text: string } | null) => void;
   archId: string;
   category: SystemCategory | 'all';
   search: string;
@@ -89,7 +150,6 @@ interface AppState {
   closeModal: (id: ModalId) => void;
   resetView: () => void;
   markVisited: (nodeId: string) => void;
-  recordQuiz: (score: number) => void;
   completeTour: () => void;
   markBasicDone: (id: string) => void;
   setFlashKnown: (archId: string, cardId: string, known: boolean) => void;
@@ -102,9 +162,37 @@ const DEFAULT_VIEW: ViewOptions = {
   numericShapes: true,
 };
 
+/** Add XP (and keep the daily streak going) in one state update. */
+function withXp(s: AppState, progress: Progress, amount: number, reason: string): Partial<AppState> {
+  return {
+    progress: { ...progress, xp: (progress.xp ?? 0) + amount, streak: bumpStreak(progress.streak) },
+    xpToast: { amount, reason, n: (s.xpToast?.n ?? 0) + 1 },
+  };
+}
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
+      home: false,
+      onboarding: { seenHome: false },
+      prefs: { focusOnTour: true, autoplay: true, tipDismissed: false },
+      setHome: (home) => set((s) => ({ home, onboarding: home ? s.onboarding : { ...s.onboarding, seenHome: true } })),
+      setOnboarding: (patch) => set((s) => ({ onboarding: { ...s.onboarding, ...patch } })),
+      setPrefs: (patch) => set((s) => ({ prefs: { ...s.prefs, ...patch } })),
+      xpToast: null,
+      award: (amount, reason) => set((s) => withXp(s, s.progress, amount, reason)),
+      predict: null,
+      setPredict: (predict) => set({ predict }),
+      answerPredict: (correct) =>
+        set((s) => {
+          const p = s.progress.predicted ?? { right: 0, total: 0 };
+          const progress = { ...s.progress, predicted: { right: p.right + (correct ? 1 : 0), total: p.total + 1 } };
+          return correct ? withXp(s, progress, XP.predict, 'Predicted the next step') : { progress };
+        }),
+      broken: null,
+      failure: null,
+      setBroken: (broken) => set((s) => ({ broken, failure: null, predict: null, tour: { ...s.tour, step: 1, playing: false } })),
+      setFailure: (failure) => set({ failure }),
       archId: 'transformer',
       category: 'all',
       search: '',
@@ -158,6 +246,9 @@ export const useAppStore = create<AppState>()(
           selectedId: null,
           hoveredId: null,
           tour: { ...s.tour, playing: false, step: 1 },
+          predict: null,
+          broken: null,
+          failure: null,
           cameraNonce: s.cameraNonce + 1,
         })),
       setCategory: (category) => set({ category }),
@@ -198,13 +289,6 @@ export const useAppStore = create<AppState>()(
           if (list.includes(nodeId)) return {};
           return { progress: { ...s.progress, visited: { ...s.progress.visited, [s.archId]: [...list, nodeId] } } };
         }),
-      recordQuiz: (score) =>
-        set((s) => ({
-          progress: {
-            ...s.progress,
-            quizBest: { ...s.progress.quizBest, [s.archId]: Math.max(score, s.progress.quizBest[s.archId] ?? 0) },
-          },
-        })),
       setFlashKnown: (archId, cardId, known) =>
         set((s) => {
           const all = s.progress.flashKnown ?? {};
@@ -216,13 +300,13 @@ export const useAppStore = create<AppState>()(
       markBasicDone: (id) =>
         set((s) => {
           const done = s.progress.basicsDone ?? [];
-          return done.includes(id) ? {} : { progress: { ...s.progress, basicsDone: [...done, id] } };
+          return done.includes(id) ? {} : withXp(s, { ...s.progress, basicsDone: [...done, id] }, XP.basic, 'Learned a basic');
         }),
       completeTour: () =>
         set((s) =>
           s.progress.toursCompleted.includes(s.archId)
             ? {}
-            : { progress: { ...s.progress, toursCompleted: [...s.progress.toursCompleted, s.archId] } },
+            : withXp(s, { ...s.progress, toursCompleted: [...s.progress.toursCompleted, s.archId] }, XP.tour, 'Finished the guided tour'),
         ),
     }),
     {
@@ -261,7 +345,7 @@ export const useAppStore = create<AppState>()(
           };
         }
       }),
-      partialize: (s) => ({ progress: s.progress, view: s.view, archId: s.archId, flow: s.flow, custom: s.custom, audio: s.audio, panels: s.panels }),
+      partialize: (s) => ({ progress: s.progress, view: s.view, archId: s.archId, flow: s.flow, custom: s.custom, audio: s.audio, panels: s.panels, onboarding: s.onboarding, prefs: s.prefs }),
     },
   ),
 );

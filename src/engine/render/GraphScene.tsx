@@ -66,9 +66,11 @@ export const GraphScene: React.FC<{ model: ArchitectureModel; scene: SceneModel;
     return { preds, succs };
   }, [visible, visSelected]);
 
-  // MoE: experts the router did not pick are shown idle
+  // MoE: experts the router did not pick are shown idle; so is a part switched off in break-it mode
+  const broken = useAppStore((s) => s.broken);
   const inactive = useMemo(() => {
     const out = new Set<string>();
+    if (broken) spec.nodes.forEach((n) => (n.content === broken || n.id === broken) && out.add(n.id));
     for (const n of spec.nodes) {
       const active: string[] | undefined = n.params?.active;
       if (!active) continue;
@@ -77,7 +79,7 @@ export const GraphScene: React.FC<{ model: ArchitectureModel; scene: SceneModel;
       });
     }
     return out;
-  }, [spec]);
+  }, [spec, broken]);
 
   const selectedGroupChildren = useMemo(() => {
     if (!visSelected || !groupsById.has(visSelected) || !layout.groups.has(visSelected)) return null;

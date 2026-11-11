@@ -1,5 +1,8 @@
 import React, { useMemo } from 'react';
-import { Search, X, CheckCircle2, Plus, Upload, Trash2, GraduationCap } from 'lucide-react';
+import { Search, X, CheckCircle2, Upload, Trash2, GraduationCap, Compass, Bot } from 'lucide-react';
+import { ARCHITECTURES_BY_ID } from '../../data/architectures';
+import { AGENTDECODE_URL } from '../../config/agentdecode';
+import { track } from '../../lib/track';
 import type { Architecture, SystemCategory } from '../../types/architecture';
 import { listArchitectures, resolveArchitecture } from '../../engine/registry';
 import { useAppStore } from '../../store/useAppStore';
@@ -45,6 +48,7 @@ export const LeftSidebar: React.FC<{ variant?: 'panel' | 'sheet'; onPicked?: () 
   const custom = useAppStore((s) => s.custom);
   const removeCustom = useAppStore((s) => s.removeCustom);
   const openModal = useAppStore((s) => s.openModal);
+  const onboardingPath = useAppStore((s) => s.onboarding.path);
 
   const all = useMemo(() => listArchitectures(custom), [custom]);
   const categories = useMemo(() => ['all', ...new Set(all.map((a) => a.category))] as (SystemCategory | 'all')[], [all]);
@@ -59,7 +63,9 @@ export const LeftSidebar: React.FC<{ variant?: 'panel' | 'sheet'; onPicked?: () 
   }, [all, search, category]);
 
   const pick = (a: Architecture) => {
+    // switch first (ignored by the URL while the landing page is up), then leave it → one history entry
     setArch(a.id);
+    if (useAppStore.getState().home) useAppStore.getState().setHome(false);
     onPicked?.();
   };
 
@@ -161,18 +167,51 @@ export const LeftSidebar: React.FC<{ variant?: 'panel' | 'sheet'; onPicked?: () 
         })}
       </div>
 
+      {(() => {
+        const path = onboardingPath;
+        if (!path?.length) return null;
+        const done = new Set(progress.toursCompleted);
+        const next = path.find((id) => !done.has(id));
+        const n = path.filter((id) => done.has(id)).length;
+        return (
+          <button
+            onClick={() => (next && ARCHITECTURES_BY_ID[next] ? pick(ARCHITECTURES_BY_ID[next]) : openModal('path'))}
+            className="mt-2 flex-shrink-0 text-left p-2.5 rounded-xl bg-[#2f2a27] text-white hover:bg-black"
+            title="Your recommended path"
+          >
+            <div className="flex items-center justify-between text-[9px] font-mono uppercase tracking-wider text-[#f5b3a8]">
+              <span className="flex items-center gap-1">
+                <Compass className="w-3 h-3" /> Your path
+              </span>
+              <span>
+                {n}/{path.length}
+              </span>
+            </div>
+            <div className="mt-1 h-1 rounded-full bg-white/15 overflow-hidden">
+              <div className="h-full bg-[#eb7c6b]" style={{ width: `${(n / path.length) * 100}%` }} />
+            </div>
+            <div className="mt-1.5 text-[12px] font-serif truncate">{next ? `Next: ${ARCHITECTURES_BY_ID[next]?.name}` : 'Path complete 🎉'}</div>
+          </button>
+        );
+      })()}
+
       <div className="flex-shrink-0 pt-2 mt-1 border-t border-[rgba(117,91,70,0.12)] space-y-1.5">
-        <div className="grid grid-cols-2 gap-1.5">
-          <button onClick={() => openModal('editor')} className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#2f2a27] text-white text-[11px] font-semibold hover:bg-black">
-            <Plus className="w-3.5 h-3.5" /> Build a model
-          </button>
-          <button onClick={() => openModal('import')} className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-white border border-[rgba(117,91,70,0.2)] text-[#2f2a27] text-[11px] font-semibold hover:border-[#eb7c6b]">
-            <Upload className="w-3.5 h-3.5" /> Import ONNX
-          </button>
-        </div>
+        <button onClick={() => openModal('import')} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-white border border-[rgba(117,91,70,0.2)] text-[#2f2a27] text-[11px] font-semibold hover:border-[#eb7c6b]">
+          <Upload className="w-3.5 h-3.5" /> Import ONNX
+        </button>
+        <a
+          href={AGENTDECODE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => track('agentdecode_clicked', { from: 'library' })}
+          title="AgentDecode 3D: prompting, RAG, tool calling and AI agents, running step by step in 3D"
+          className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-gradient-to-r from-[#f6f1fb] to-[#eef7fa] border border-[#8d6bcc]/25 text-[#5b3fb3] text-[11px] font-semibold hover:border-[#8d6bcc]/60"
+        >
+          <Bot className="w-3.5 h-3.5" /> Learn AI agents in 3D ↗
+        </a>
         <div className="flex items-center gap-1.5 text-[10px] text-[#8d847c] px-1">
           <GraduationCap className="w-3.5 h-3.5 text-[#8d6bcc]" />
-          {progress.toursCompleted.length} tours completed · {Object.keys(progress.quizBest).length} quizzes taken
+          {progress.toursCompleted.length} tours completed · {progress.basicsDone?.length ?? 0} basics learned
         </div>
       </div>
     </aside>

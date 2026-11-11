@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ArrowUp, ArrowDown, CircleOff } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ArrowUp, ArrowDown, CircleOff, Brain, Unplug, Maximize2, Minimize2 } from 'lucide-react';
+import { track } from '../../lib/track';
 import type { ArchitectureModel } from '../../engine/useArchitectureModel';
 import { useAppStore, FlowMode } from '../../store/useAppStore';
 
@@ -17,14 +18,23 @@ export const TourPlayer: React.FC<{ model: ArchitectureModel }> = ({ model }) =>
   const setTour = useAppStore((s) => s.setTour);
   const flow = useAppStore((s) => s.flow);
   const setFlow = useAppStore((s) => s.setFlow);
+  const home = useAppStore((s) => s.home);
+  const focusOnTour = useAppStore((s) => s.prefs.focusOnTour);
+  const predictOn = useAppStore((s) => !!s.prefs.predict);
+  const setPrefs = useAppStore((s) => s.setPrefs);
+  const broken = useAppStore((s) => s.broken);
+  const setBroken = useAppStore((s) => s.setBroken);
+  const [breakOpen, setBreakOpen] = useState(false);
   const steps = model.architecture.dataFlowSteps;
+  // parts that can be switched off: the ones the tour passes through (after the first step)
+  const breakable = model.architecture.components.filter((c) => steps.some((s) => s.stepIndex > 1 && s.activeNodeId === c.id));
   const step = steps.find((s) => s.stepIndex === tour.step) ?? steps[0];
   const go = (n: number) => setTour({ step: Math.min(steps.length, Math.max(1, n)) });
 
   return (
-    <div className="absolute bottom-2 lg:bottom-4 left-2 right-2 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 z-20 flex flex-col items-center gap-2 select-none lg:w-[min(720px,calc(100%-170px))]">
+    <div className="absolute bottom-2 lg:bottom-4 left-2 right-2 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 z-20 flex flex-col items-center gap-2 select-none lg:w-[min(820px,calc(100%-170px))]">
       <AnimatePresence mode="wait">
-        {step && (tour.playing || tour.step > 1) && (
+        {!home && step && (tour.playing || tour.step > 1) && (
           <motion.div
             key={`${model.architecture.id}-${tour.step}`}
             initial={{ opacity: 0, y: 8 }}
@@ -41,7 +51,30 @@ export const TourPlayer: React.FC<{ model: ArchitectureModel }> = ({ model }) =>
         )}
       </AnimatePresence>
 
-      <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 max-w-full overflow-x-auto rounded-full bg-[rgba(255,252,247,0.95)] backdrop-blur-md border border-[rgba(117,91,70,0.18)] shadow-[0_12px_32px_rgba(87,62,43,0.12)]">
+      {!home && breakOpen && (
+        <div className="self-end w-56 max-h-64 overflow-y-auto custom-scrollbar p-1.5 rounded-2xl bg-white border border-[rgba(117,91,70,0.18)] shadow-2xl">
+          <span className="block px-2 py-1 text-[9px] font-mono font-bold uppercase text-rose-600">Switch a layer off</span>
+          {broken && (
+            <button onClick={() => (setBroken(null), setBreakOpen(false))} className="w-full text-left px-2 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 hover:bg-emerald-50">
+              ✓ Repair everything
+            </button>
+          )}
+          {breakable.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => {
+                setBroken(c.id);
+                setBreakOpen(false);
+                setTimeout(() => setTour({ step: 1, playing: true }), 50);
+              }}
+              className={`w-full text-left px-2 py-1.5 rounded-lg text-xs hover:bg-rose-50 ${broken === c.id ? 'bg-rose-50 text-rose-700 font-semibold' : 'text-[#2f2a27]'}`}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
+      {!home && <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 max-w-full overflow-x-auto rounded-full bg-[rgba(255,252,247,0.95)] backdrop-blur-md border border-[rgba(117,91,70,0.18)] shadow-[0_12px_32px_rgba(87,62,43,0.12)]">
         <button onClick={() => go(tour.step - 1)} disabled={tour.step <= 1} className="p-1.5 rounded-full text-[#8d847c] hover:text-[#2f2a27] hover:bg-stone-100 disabled:opacity-30" title="Previous step">
           <SkipBack className="w-4 h-4" />
         </button>
@@ -101,7 +134,33 @@ export const TourPlayer: React.FC<{ model: ArchitectureModel }> = ({ model }) =>
             </button>
           ))}
         </div>
-      </div>
+
+        <button
+          onClick={() => setPrefs({ predict: !predictOn })}
+          className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold flex-shrink-0 ${predictOn ? 'bg-[#8B6BD6] text-white' : 'text-[#8d847c] hover:bg-stone-100'}`}
+          title={predictOn ? 'Predict mode on: the tour pauses to ask what happens next (+5 XP each)' : 'Turn on predict mode: guess the next step before it plays'}
+        >
+          <Brain className="w-3.5 h-3.5" />
+          <span className="hidden xl:inline">Predict</span>
+        </button>
+        <span className="flex-shrink-0">
+          <button
+            onClick={() => setBreakOpen(!breakOpen)}
+            className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold ${broken ? 'bg-rose-500 text-white' : 'text-[#8d847c] hover:bg-stone-100'}`}
+            title="Break-it mode: switch a layer off and watch the forward pass fail"
+          >
+            <Unplug className="w-3.5 h-3.5" />
+            <span className="hidden xl:inline">{broken ? 'Broken' : 'Break it'}</span>
+          </button>
+        </span>
+        <button
+          onClick={() => (setPrefs({ focusOnTour: !focusOnTour }), track('focus_toggled', { on: !focusOnTour }))}
+          className={`hidden lg:block p-1.5 rounded-full flex-shrink-0 ${focusOnTour ? 'text-[#eb7c6b] bg-[#eb7c6b]/10' : 'text-[#8d847c] hover:bg-stone-100'}`}
+          title={focusOnTour ? 'Focus mode on: panels hide while the tour plays' : 'Focus mode off: panels stay open'}
+        >
+          {focusOnTour ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+        </button>
+      </div>}
     </div>
   );
 };

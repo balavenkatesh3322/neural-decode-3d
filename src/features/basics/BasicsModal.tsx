@@ -6,6 +6,8 @@ import { BASICS, UNITS, type Basic, type SandboxKind } from '../../data/basics';
 import { useAppStore } from '../../store/useAppStore';
 import { ALL_ARCHITECTURES } from '../../data/architectures';
 import { GRAPHS } from '../../specs';
+import { BASIC_TO_AD, adLink } from '../../config/agentdecode';
+import { track } from '../../lib/track';
 import { WeightBiasSandbox } from '../../components/sandboxes/WeightBiasSandbox';
 import { ActivationSandbox } from '../../components/sandboxes/ActivationSandbox';
 import { GradientSandbox, SoftmaxSandbox, ConvolutionSandbox, DropoutSandbox, AttentionSandbox } from './Sandboxes';
@@ -222,6 +224,24 @@ export const BasicsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               </section>
             )}
           </div>
+
+          {BASIC_TO_AD[b.id] && (
+            <a
+              href={adLink(BASIC_TO_AD[b.id].topic)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => track('agentdecode_clicked', { from: 'basics', concept: b.id })}
+              className="flex items-center gap-2.5 p-3 rounded-2xl bg-gradient-to-br from-[#f6f1fb] to-[#eef7fa] border border-[#8d6bcc]/25 hover:border-[#8d6bcc]/60"
+            >
+              <span className="text-xl">🤖</span>
+              <span className="min-w-0">
+                <span className="block text-[9px] font-mono font-bold uppercase tracking-wider text-[#8d6bcc]">See it used in real apps · AgentDecode 3D ↗</span>
+                <span className="block text-sm text-[#2f2a27]">
+                  <b>{BASIC_TO_AD[b.id].name}</b>: {BASIC_TO_AD[b.id].why}
+                </span>
+              </span>
+            </a>
+          )}
 
           {links.length > 0 && (
             <section className="space-y-1.5">

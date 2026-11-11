@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { useAppStore } from '../../store/useAppStore';
 import { resolveArchitecture, specToHash } from '../../engine/registry';
+import { track } from '../../lib/track';
 import {
   X,
   Share2,
@@ -23,11 +24,15 @@ export const ShareModal: React.FC<ShareModalProps> = ({ onClose }) => {
   const [copied, setCopied] = useState(false);
   const archId = useAppStore((st) => st.archId);
   const custom = useAppStore((st) => st.custom);
+  const tourStep = useAppStore((st) => st.tour.step);
+  const [atStep, setAtStep] = useState(tourStep > 1);
+  const [embedCopied, setEmbedCopied] = useState(false);
   const { architecture, spec } = resolveArchitecture(archId, custom);
-  // built-in models get a short link; your own models travel inside the link itself
-  const base = `${window.location.origin}${window.location.pathname}`;
-  const shareUrl = custom[archId] ? `${base}#${specToHash(spec)}` : `${base}#arch=${encodeURIComponent(archId)}`;
-  const shareTitle = `${architecture.name} in 3D — NeuralDecode`;
+  // built-in models get a clean path; your own models travel inside the link itself
+  const archUrl = `${window.location.origin}/architecture/${encodeURIComponent(archId)}`;
+  const shareUrl = custom[archId] ? `${archUrl}#${specToHash(spec)}` : `${archUrl}${atStep && tourStep > 1 ? `?step=${tourStep}` : ''}`;
+  const shareTitle = atStep && tourStep > 1 ? `${architecture.name}, step ${tourStep}, in 3D — NeuralDecode` : `${architecture.name} in 3D — NeuralDecode`;
+  const embedCode = `<iframe src="${window.location.origin}/embed/${encodeURIComponent(archId)}" width="100%" height="520" style="border:0;border-radius:16px" title="${architecture.name} — NeuralDecode 3D" loading="lazy" allow="fullscreen"></iframe>`;
 
   const handleCopyLink = async () => {
     try {
@@ -38,6 +43,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ onClose }) => {
       input?.select();
     }
     setCopied(true);
+    track('shared', { via: 'copy', arch: archId });
     confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
     setTimeout(() => setCopied(false), 2500);
   };
@@ -89,7 +95,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ onClose }) => {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.93, y: 16 }}
           transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-          className="relative bg-[#fffbf4] border border-[rgba(117,91,70,0.18)] rounded-[28px] max-w-md w-full p-6 shadow-[0_24px_60px_rgba(87,62,43,0.15)] overflow-hidden z-10 space-y-5"
+          className="relative bg-[#fffbf4] border border-[rgba(117,91,70,0.18)] rounded-[28px] max-w-md w-full max-h-[92dvh] overflow-y-auto custom-scrollbar p-6 shadow-[0_24px_60px_rgba(87,62,43,0.15)] z-10 space-y-5"
         >
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -99,11 +105,9 @@ export const ShareModal: React.FC<ShareModalProps> = ({ onClose }) => {
               </div>
               <div>
                 <span className="text-[10px] font-mono font-bold tracking-wider text-[#eb7c6b] uppercase block">
-                  SHARE SPECIMEN ENGINE
+                  Share this architecture
                 </span>
-                <h3 className="font-serif font-bold text-xl text-[#2f2a27]">
-                  Spread NeuralDecode 3D
-                </h3>
+                <h3 className="font-serif font-bold text-xl text-[#2f2a27] leading-tight">{architecture.name}</h3>
               </div>
             </div>
 
@@ -115,6 +119,13 @@ export const ShareModal: React.FC<ShareModalProps> = ({ onClose }) => {
             </button>
           </div>
 
+          {tourStep > 1 && !custom[archId] && (
+            <label className="flex items-center gap-2 p-3 rounded-2xl bg-white border border-[rgba(117,91,70,0.18)] text-xs text-[#2f2a27] cursor-pointer">
+              <input type="checkbox" checked={atStep} onChange={(e) => setAtStep(e.target.checked)} className="accent-[#eb7c6b]" />
+              Link to <b>this exact moment</b> (tour step {tourStep})
+            </label>
+          )}
+
           {/* Social Share Grid */}
           <div className="grid grid-cols-2 gap-2.5">
             {socialLinks.map((item, idx) => {
@@ -122,6 +133,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ onClose }) => {
               return (
                 <a
                   key={idx}
+                  onClick={() => track('shared', { via: item.name, arch: archId })}
                   href={item.url}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -161,6 +173,31 @@ export const ShareModal: React.FC<ShareModalProps> = ({ onClose }) => {
               <span>{copied ? 'Copied!' : 'Copy Link'}</span>
             </button>
           </div>
+
+          {!custom[archId] && (
+            <div className="space-y-1.5">
+              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8d847c]">Embed in your blog or course</div>
+              <div className="p-2.5 rounded-2xl bg-[#2f2a27] flex items-start gap-2">
+                <code className="flex-1 text-[10px] font-mono text-[#f6efe6] break-all leading-relaxed select-text">{embedCode}</code>
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(embedCode);
+                    } catch {
+                      /* clipboard blocked */
+                    }
+                    setEmbedCopied(true);
+                    track('shared', { via: 'embed', arch: archId });
+                    setTimeout(() => setEmbedCopied(false), 2000);
+                  }}
+                  className="flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg bg-[#eb7c6b] text-white text-[10px] font-bold"
+                >
+                  {embedCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  {embedCopied ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+            </div>
+          )}
         </motion.div>
       </div>
     </AnimatePresence>

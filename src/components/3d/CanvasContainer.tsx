@@ -12,6 +12,7 @@ import { isMobileNow } from '../../hooks/useIsMobile';
 import { MiniMap } from '../../features/minimap/MiniMap';
 import { Lens, LensPointer } from '../../engine/render/Lens';
 import { ViewControls } from '../../features/viewcontrols/ViewControls';
+import { useFocus } from '../../features/focus/useFocus';
 
 const LENS_PX = 220;
 
@@ -39,6 +40,7 @@ class SceneBoundary extends React.Component<{ resetKey: string; onError: (msg: s
 
 /** Hosts the WebGL canvas: lighting, backdrop, post-processing and the data-driven GraphScene. */
 export const CanvasContainer: React.FC<{ model: ArchitectureModel }> = ({ model }) => {
+  const { minimal } = useFocus();
   const stored = useAppStore((s) => s.collapsed[s.archId]);
   // until the user expands/collapses something, use the spec's defaults (e.g. big imported models start collapsed)
   const specDefault = useMemo(() => (model.spec.groups ?? []).filter((g) => g.collapsed).map((g) => g.id), [model.spec]);
@@ -132,8 +134,8 @@ export const CanvasContainer: React.FC<{ model: ArchitectureModel }> = ({ model 
         {lens.on && <Lens pointer={lensPointer} zoom={lens.zoom} size={LENS_PX} output={lensCanvas} />}
       </Canvas>
 
-      {current && <MiniMap model={model} scene={current} />}
-      <ViewControls />
+      {current && !minimal && <MiniMap model={model} scene={current} />}
+      {!minimal && <ViewControls />}
       {lens.on && (
         <div
           ref={lensFrame}
@@ -162,8 +164,8 @@ export const CanvasContainer: React.FC<{ model: ArchitectureModel }> = ({ model 
                 <Boxes className="w-6 h-6 text-[#2f2a27] animate-pulse" />
               </div>
               <div>
-                <h3 className="font-serif font-medium text-lg text-[#2f2a27]">Decoding 3D Specimen…</h3>
-                <p className="text-xs font-sans text-[#8d847c] mt-0.5">Inferring tensor shapes & laying out the graph</p>
+                <h3 className="font-serif font-medium text-lg text-[#2f2a27]">Building the 3D model…</h3>
+                <p className="text-xs font-sans text-[#8d847c] mt-0.5">Working out every tensor shape and wiring up the layers</p>
               </div>
             </div>
           </motion.div>

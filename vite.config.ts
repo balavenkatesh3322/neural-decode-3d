@@ -1,10 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { prerenderArchitectures } from './build/prerender';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), prerenderArchitectures(__dirname)],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
